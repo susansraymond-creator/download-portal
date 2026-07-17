@@ -1,6 +1,5 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
@@ -175,7 +174,6 @@ model Content {
   @@index([status, publishAt])
   @@index([type])
   @@index([categoryId])
-  @@fulltext([title, description])
 }
 
 enum LinkStatus {
