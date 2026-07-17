@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --color-ink: #0e1015;
+  --color-surface: #161a21;
+  --color-surface-raised: #1c212a;
+  --color-border: #2a313d;
+  --color-text: #e7e6df;
+  --color-text-muted: #9aa0ab;
+  --color-brass: #c9a227;
+  --color-brass-bright: #e7c34f;
+  --color-teal: #4fa89b;
+  --color-danger: #c1502e;
+}
+
+@theme inline {
+  --color-ink: var(--color-ink);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-brass: var(--color-brass);
+  --color-brass-bright: var(--color-brass-bright);
+  --color-teal: var(--color-teal);
+  --color-danger: var(--color-danger);
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 0);
+  background-size: 28px 28px;
+}
+
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-jetbrains-mono); }
+
+/* Signature element: index-card styling with a perforated top edge,
+   evoking a physical library catalog card for each piece of content. */
+.index-card {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+}
+
+.index-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-image: radial-gradient(circle, var(--color-ink) 1.5px, transparent 1.6px);
+  background-size: 8px 3px;
+  background-repeat: repeat-x;
+}
+
+.stamp {
+  font-family: var(--font-jetbrains-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+
+::selection { background: var(--color-brass); color: var(--color-ink); }
+:focus-visible { outline: 2px solid var(--color-brass-bright); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,320 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex", "fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// AUTH / USERS
+// ─────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role      @default(USER)
+  isBanned      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  favorites         Favorite[]
+  downloadHistory   DownloadEvent[]
+  comments          Comment[]
+  notifications     Notification[]
+  reports           Report[]
+  auditLogs         AuditLog[]
+  passwordResetToken PasswordResetToken[]
+  content           Content[]            @relation("ContentAuthor")
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CONTENT
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ContentType {
+  VIDEO
+  COURSE
+  TUTORIAL
+  DOCUMENT
+  SOFTWARE
+  AUDIO
+  IMAGE
+  ARCHIVE
+}
+
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  icon        String?
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  content     Content[]
+  createdAt   DateTime   @default(now())
+
+  @@index([slug])
+}
+
+model Tag {
+  id      String    @id @default(cuid())
+  name    String
+  slug    String    @unique
+  content Content[] @relation("ContentTags")
+}
+
+model Content {
+  id               String        @id @default(cuid())
+  title            String
+  slug             String        @unique
+  description      String        @db.Text
+  shortDescription String?
+  type             ContentType
+  status           ContentStatus @default(DRAFT)
+
+  posterUrl    String?
+  thumbnailUrl String?
+  galleryUrls  String[]      @default([])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  tags       Tag[]     @relation("ContentTags")
+
+  authorId String
+  author   User   @relation("ContentAuthor", fields: [authorId], references: [id])
+
+  isFeatured Boolean   @default(false)
+  publishAt  DateTime?
+  publishedAt DateTime?
+
+  viewCount     Int @default(0)
+  downloadCount Int @default(0)
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  canonicalUrl    String?
+  ogImageUrl      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  downloadLinks DownloadLink[]
+  favorites     Favorite[]
+  comments      Comment[]
+  downloadEvents DownloadEvent[]
+  reports       Report[]
+
+  relatedTo   Content[] @relation("RelatedContent")
+  relatedFrom Content[] @relation("RelatedContent")
+
+  @@index([slug])
+  @@index([status, publishAt])
+  @@index([type])
+  @@index([categoryId])
+  @@fulltext([title, description])
+}
+
+enum LinkStatus {
+  ACTIVE
+  DISABLED
+  BROKEN
+}
+
+model DownloadLink {
+  id           String     @id @default(cuid())
+  contentId    String
+  content      Content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  providerName String
+  url          String     @db.Text
+  fileSize     String?
+  version      String?
+  quality      String?
+  language     String?
+  notes        String?
+  status       LinkStatus @default(ACTIVE)
+  sortOrder    Int        @default(0)
+  clickCount   Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  downloadEvents DownloadEvent[]
+
+  @@index([contentId])
+}
+
+model DownloadEvent {
+  id             String        @id @default(cuid())
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  contentId      String
+  content        Content       @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  downloadLinkId String
+  downloadLink   DownloadLink  @relation(fields: [downloadLinkId], references: [id], onDelete: Cascade)
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime      @default(now())
+
+  @@index([userId])
+  @@index([contentId])
+  @@index([createdAt])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Comment {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content       @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  body      String        @db.Text
+  status    CommentStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+}
+
+enum ReportReason {
+  BROKEN_LINK
+  WRONG_CONTENT
+  COPYRIGHT
+  SPAM
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id        String       @id @default(cuid())
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  contentId String
+  content   Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  reason    ReportReason
+  message   String?      @db.Text
+  status    ReportStatus @default(OPEN)
+  createdAt DateTime     @default(now())
+}
+
+enum NotificationType {
+  NEW_CONTENT
+  LINK_FIXED
+  SYSTEM
+  COMMENT_REPLY
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Setting {
+  key   String @id
+  value Json
+}
