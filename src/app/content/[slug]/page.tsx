@@ -11,6 +11,7 @@ import { ReportButton } from "@/components/report-button";
 import { auth } from "@/lib/auth";
 
 export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 async function loadContent(slug: string) {
   const content = await getContentBySlug(slug);
