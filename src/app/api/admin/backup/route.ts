@@ -34,7 +34,7 @@ const importSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { session, response } = await requireAdmin();
+  const { session, response } = await requirePermission("MANAGE_SETTINGS");
   if (response) return response;
 
   const parsed = importSchema.safeParse(await req.json().catch(() => null));

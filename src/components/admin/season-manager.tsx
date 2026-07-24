@@ -7,10 +7,10 @@ type DownloadLink = {
   id?: string;
   providerName: string;
   url: string;
-  fileSize: string;
-  quality: string;
-  language: string;
-  notes: string;
+  fileSize: string | null;
+  quality: string | null;
+  language: string | null;
+  notes: string | null;
   status: "ACTIVE" | "DISABLED" | "BROKEN";
 };
 
@@ -220,7 +220,15 @@ function EpisodeBlock({
   const [title, setTitle] = useState(episode.title);
   const [episodeNumber, setEpisodeNumber] = useState(episode.episodeNumber);
   const [links, setLinks] = useState<DownloadLink[]>(
-    episode.downloadLinks.length > 0 ? episode.downloadLinks : [{ ...emptyLink }]
+    episode.downloadLinks.length > 0
+      ? episode.downloadLinks.map((l) => ({
+          ...l,
+          fileSize: l.fileSize ?? "",
+          quality: l.quality ?? "",
+          language: l.language ?? "",
+          notes: l.notes ?? "",
+        }))
+      : [{ ...emptyLink }]
   );
   const [saving, setSaving] = useState(false);
   const router = useRouter();
@@ -306,7 +314,7 @@ function EpisodeBlock({
             />
             <input
               placeholder="Quality"
-              value={link.quality}
+              value={link.quality ?? ""}
               onChange={(e) => updateLink(i, { quality: e.target.value })}
               className="rounded-sm border border-border bg-surface px-2 py-1 text-xs"
             />
