@@ -58,6 +58,8 @@ export function ContentEditorForm({
     thumbnailUrl: string;
     categoryId: string;
     isFeatured: boolean;
+    hasSeasons: boolean;
+    accessLevel: string;
     publishAt: string;
     metaTitle: string;
     metaDescription: string;
@@ -76,6 +78,8 @@ export function ContentEditorForm({
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnailUrl ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
+  const [hasSeasons, setHasSeasons] = useState(initial?.hasSeasons ?? false);
+  const [accessLevel, setAccessLevel] = useState(initial?.accessLevel ?? "NORMAL");
   const [publishAt, setPublishAt] = useState(initial?.publishAt ?? "");
   const [metaTitle, setMetaTitle] = useState(initial?.metaTitle ?? "");
   const [metaDescription, setMetaDescription] = useState(initial?.metaDescription ?? "");
@@ -109,6 +113,8 @@ export function ContentEditorForm({
       categoryId: categoryId || undefined,
       tagIds: [],
       isFeatured,
+      hasSeasons,
+      accessLevel,
       publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
       metaTitle: metaTitle || undefined,
       metaDescription: metaDescription || undefined,
@@ -255,6 +261,22 @@ export function ContentEditorForm({
           <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
           Feature on homepage
         </label>
+
+        <label className="flex items-center gap-2 text-sm text-text-muted">
+          <input type="checkbox" checked={hasSeasons} onChange={(e) => setHasSeasons(e.target.checked)} />
+          This is a series (has seasons &amp; episodes)
+        </label>
+
+        <Field label="Access level">
+          <select
+            value={accessLevel}
+            onChange={(e) => setAccessLevel(e.target.value)}
+            className="w-full max-w-xs rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+          >
+            <option value="NORMAL">Normal</option>
+            <option value="PREMIUM">Premium</option>
+          </select>
+        </Field>
       </section>
 
       <section className="index-card space-y-4 p-6">
@@ -304,6 +326,7 @@ export function ContentEditorForm({
         </Field>
       </section>
 
+      {!hasSeasons && (
       <section className="index-card space-y-4 p-6">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg">Download links</h2>
@@ -390,6 +413,17 @@ export function ContentEditorForm({
           ))}
         </div>
       </section>
+      )}
+
+      {hasSeasons && contentId && (
+        <p className="rounded-sm border border-teal/40 bg-teal/5 p-4 text-sm text-text-muted">
+          This content uses Seasons &amp; Episodes for downloads. Manage them from the{" "}
+          <a href={`/admin/content/${contentId}/seasons`} className="text-teal hover:underline">
+            Seasons &amp; Episodes
+          </a>{" "}
+          page.
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <button

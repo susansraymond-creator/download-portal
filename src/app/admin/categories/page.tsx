@@ -16,6 +16,7 @@ export default async function AdminCategoriesPage() {
           name: c.name,
           slug: c.slug,
           count: c._count.content,
+          isHidden: c.isHidden,
         }))}
       />
     </div>

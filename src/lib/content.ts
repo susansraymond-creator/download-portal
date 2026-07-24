@@ -4,7 +4,10 @@ import type { Prisma } from "@prisma/client";
 
 const PUBLISHED_WHERE: Prisma.ContentWhereInput = {
   status: "PUBLISHED",
-  OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }],
+  AND: [
+    { OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }] },
+    { OR: [{ categoryId: null }, { category: { isHidden: false } }] },
+  ],
 };
 
 export const CARD_SELECT = {
@@ -59,6 +62,7 @@ export async function getPopularContent(limit = 12) {
 export async function getCategories() {
   return cached("categories:all", 600, () =>
     prisma.category.findMany({
+      where: { isHidden: false },
       orderBy: { name: "asc" },
       include: { _count: { select: { content: true } } },
     })
@@ -122,6 +126,20 @@ export async function getContentBySlug(slug: string) {
       downloadLinks: {
         where: { status: "ACTIVE" },
         orderBy: { sortOrder: "asc" },
+      },
+      seasons: {
+        orderBy: { seasonNumber: "asc" },
+        include: {
+          episodes: {
+            orderBy: { episodeNumber: "asc" },
+            include: {
+              downloadLinks: {
+                where: { status: "ACTIVE" },
+                orderBy: { sortOrder: "asc" },
+              },
+            },
+          },
+        },
       },
       relatedTo: { select: CARD_SELECT, take: 6 },
     },

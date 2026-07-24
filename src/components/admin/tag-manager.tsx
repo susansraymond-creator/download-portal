@@ -26,6 +26,12 @@ export function TagManager({ initialTags }: { initialTags: Tag[] }) {
     }
   }
 
+  async function deleteTag(id: string) {
+    if (!confirm("Delete this tag? It will be removed from all content.")) return;
+    await fetch(`/api/admin/tags/${id}`, { method: "DELETE" });
+    setTags((prev) => prev.filter((t) => t.id !== id));
+  }
+
   return (
     <div className="space-y-6">
       <form onSubmit={addTag} className="flex gap-2">
@@ -48,9 +54,16 @@ export function TagManager({ initialTags }: { initialTags: Tag[] }) {
         {tags.map((t) => (
           <span
             key={t.id}
-            className="rounded-sm border border-border px-2 py-1 font-mono text-xs text-text-muted"
+            className="flex items-center gap-2 rounded-sm border border-border px-2 py-1 font-mono text-xs text-text-muted"
           >
             #{t.name}
+            <button
+              onClick={() => deleteTag(t.id)}
+              className="text-danger hover:underline"
+              title="Delete tag"
+            >
+              ×
+            </button>
           </span>
         ))}
       </div>

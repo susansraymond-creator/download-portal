@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/api-guard";
 
 const schema = z.object({ status: z.enum(["PENDING", "APPROVED", "REJECTED"]) });
 
@@ -9,7 +9,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { response } = await requireAdmin();
+  const { response } = await requirePermission("MANAGE_COMMENTS");
   if (response) return response;
 
   const { id } = await params;

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/api-guard";
 import { logAudit } from "@/lib/audit";
 import { getClientIp } from "@/lib/rate-limit";
 
 export async function GET() {
-  const { response } = await requireAdmin();
+  const { session, response } = await requirePermission("MANAGE_SETTINGS");
   if (response) return response;
 
   const [content, categories, tags] = await Promise.all([

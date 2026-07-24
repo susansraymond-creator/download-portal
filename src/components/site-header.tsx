@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { SearchBar } from "@/components/search-bar";
+import { LogoutButton } from "@/components/logout-button";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -32,6 +33,7 @@ export async function SiteHeader() {
               <Link href="/account" className="text-text-muted hover:text-text">
                 {session.user.name ?? "Account"}
               </Link>
+              <LogoutButton />
             </div>
           ) : (
             <div className="flex items-center gap-3 text-sm">

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/api-guard";
 import { contentSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { invalidateCache } from "@/lib/redis";
 import { getClientIp } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
-  const { response } = await requireAdmin();
+  const { response } = await requirePermission("MANAGE_CONTENT");
   if (response) return response;
 
   const { searchParams } = new URL(req.url);
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, response } = await requireAdmin();
+  const { session, response } = await requirePermission("MANAGE_CONTENT");
   if (response) return response;
 
   const parsed = contentSchema.safeParse(await req.json().catch(() => null));
@@ -55,6 +55,8 @@ export async function POST(req: NextRequest) {
       thumbnailUrl: data.thumbnailUrl,
       categoryId: data.categoryId,
       isFeatured: data.isFeatured,
+      hasSeasons: data.hasSeasons,
+      accessLevel: data.accessLevel,
       publishAt: data.publishAt ? new Date(data.publishAt) : null,
       publishedAt: data.status === "PUBLISHED" ? new Date() : null,
       metaTitle: data.metaTitle,

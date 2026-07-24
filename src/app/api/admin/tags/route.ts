@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/api-guard";
 
 const tagSchema = z.object({ name: z.string().min(1).max(50) });
 
@@ -12,7 +12,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { response } = await requireAdmin();
+  const { response } = await requirePermission("MANAGE_TAGS");
   if (response) return response;
 
   const parsed = tagSchema.safeParse(await req.json().catch(() => null));

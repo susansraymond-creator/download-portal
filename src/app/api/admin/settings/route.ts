@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/api-guard";
 import { logAudit } from "@/lib/audit";
 import { getClientIp } from "@/lib/rate-limit";
 
@@ -13,7 +13,7 @@ const schema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const { session, response } = await requireAdmin();
+  const { session, response } = await requirePermission("MANAGE_SETTINGS");
   if (response) return response;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

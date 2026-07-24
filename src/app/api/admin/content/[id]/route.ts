@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/api-guard";
 import { contentSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { invalidateCache } from "@/lib/redis";
@@ -10,7 +10,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { response } = await requireAdmin();
+  const { response } = await requirePermission("MANAGE_CONTENT");
   if (response) return response;
 
   const { id } = await params;
@@ -27,7 +27,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, response } = await requireAdmin();
+  const { session, response } = await requirePermission("MANAGE_CONTENT");
   if (response) return response;
 
   const { id } = await params;
@@ -72,6 +72,8 @@ export async function PATCH(
         ...(data.thumbnailUrl !== undefined && { thumbnailUrl: data.thumbnailUrl }),
         ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
         ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
+        ...(data.hasSeasons !== undefined && { hasSeasons: data.hasSeasons }),
+        ...(data.accessLevel !== undefined && { accessLevel: data.accessLevel }),
         ...(data.publishAt !== undefined && {
           publishAt: data.publishAt ? new Date(data.publishAt) : null,
         }),
@@ -115,7 +117,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, response } = await requireAdmin();
+  const { session, response } = await requirePermission("MANAGE_CONTENT");
   if (response) return response;
 
   const { id } = await params;

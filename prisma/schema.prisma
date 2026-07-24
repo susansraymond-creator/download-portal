@@ -11,9 +11,24 @@ datasource db {
 // ─────────────────────────────────────────────────────────────────────────
 
 enum Role {
+  VISITOR
   USER
+  PREMIUM
   ADMIN
   SUPER_ADMIN
+}
+
+enum Permission {
+  MANAGE_CONTENT
+  MANAGE_CATEGORIES
+  MANAGE_TAGS
+  MANAGE_USERS
+  MANAGE_COMMENTS
+  MANAGE_REPORTS
+  MANAGE_DOWNLOAD_LINKS
+  VIEW_ANALYTICS
+  MANAGE_SETTINGS
+  MANAGE_NOTIFICATIONS
 }
 
 model User {
@@ -25,6 +40,7 @@ model User {
   passwordHash  String?
   role          Role      @default(USER)
   isBanned      Boolean   @default(false)
+  isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -38,8 +54,21 @@ model User {
   auditLogs         AuditLog[]
   passwordResetToken PasswordResetToken[]
   content           Content[]            @relation("ContentAuthor")
+  permissions       AdminPermission[]
 
   @@index([email])
+}
+
+model AdminPermission {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission
+  grantedAt  DateTime   @default(now())
+  grantedBy  String?
+
+  @@unique([userId, permission])
+  @@index([userId])
 }
 
 model Account {
@@ -96,6 +125,11 @@ enum ContentType {
   ARCHIVE
 }
 
+enum ContentAccessLevel {
+  NORMAL
+  PREMIUM
+}
+
 enum ContentStatus {
   DRAFT
   SCHEDULED
@@ -109,6 +143,7 @@ model Category {
   slug        String     @unique
   description String?
   icon        String?
+  isHidden    Boolean    @default(false)
   parentId    String?
   parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryTree")
@@ -116,6 +151,7 @@ model Category {
   createdAt   DateTime   @default(now())
 
   @@index([slug])
+  @@index([isHidden])
 }
 
 model Tag {
@@ -132,6 +168,7 @@ model Content {
   description      String        @db.Text
   shortDescription String?
   type             ContentType
+  accessLevel      ContentAccessLevel @default(NORMAL)
   status           ContentStatus @default(DRAFT)
 
   posterUrl    String?
@@ -151,6 +188,7 @@ model Content {
 
   viewCount     Int @default(0)
   downloadCount Int @default(0)
+  hasSeasons    Boolean @default(false)
 
   // SEO
   metaTitle       String?
@@ -166,6 +204,7 @@ model Content {
   comments      Comment[]
   downloadEvents DownloadEvent[]
   reports       Report[]
+  seasons       Season[]
 
   relatedTo   Content[] @relation("RelatedContent")
   relatedFrom Content[] @relation("RelatedContent")
@@ -180,6 +219,60 @@ enum LinkStatus {
   ACTIVE
   DISABLED
   BROKEN
+}
+
+model Season {
+  id          String   @id @default(cuid())
+  contentId   String
+  content     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  seasonNumber Int
+  title       String?
+  description String?  @db.Text
+  posterUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  episodes    Episode[]
+
+  @@unique([contentId, seasonNumber])
+  @@index([contentId])
+}
+
+model Episode {
+  id            String     @id @default(cuid())
+  seasonId      String
+  season        Season     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  episodeNumber Int
+  title         String
+  description   String?    @db.Text
+  thumbnailUrl  String?
+  duration      String?
+  firstUploadedAt DateTime @default(now())
+  lastUpdatedAt   DateTime @updatedAt
+
+  downloadLinks EpisodeDownloadLink[]
+
+  @@unique([seasonId, episodeNumber])
+  @@index([seasonId])
+}
+
+model EpisodeDownloadLink {
+  id           String     @id @default(cuid())
+  episodeId    String
+  episode      Episode    @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  providerName String
+  url          String     @db.Text
+  fileSize     String?
+  quality      String?
+  language     String?
+  notes        String?
+  status       LinkStatus @default(ACTIVE)
+  sortOrder    Int        @default(0)
+  clickCount   Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([episodeId])
 }
 
 model DownloadLink {

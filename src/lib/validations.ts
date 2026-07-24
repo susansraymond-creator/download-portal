@@ -63,6 +63,8 @@ export const contentSchema = z.object({
   categoryId: z.string().cuid().optional().nullable(),
   tagIds: z.array(z.string().cuid()).default([]),
   isFeatured: z.boolean().default(false),
+  hasSeasons: z.boolean().default(false),
+  accessLevel: z.enum(["NORMAL", "PREMIUM"]).default("NORMAL"),
   publishAt: z.string().datetime().optional().nullable(),
   metaTitle: z.string().max(70).optional().nullable(),
   metaDescription: z.string().max(160).optional().nullable(),

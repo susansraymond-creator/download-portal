@@ -6,9 +6,11 @@ import { getContentBySlug, getRelatedContent } from "@/lib/content";
 import { prisma } from "@/lib/prisma";
 import { ContentCard } from "@/components/content-card";
 import { DownloadLinksList } from "@/components/download-links-list";
+import { SeasonEpisodeList } from "@/components/season-episode-list";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ReportButton } from "@/components/report-button";
 import { auth } from "@/lib/auth";
+import { canAccessContent } from "@/lib/permissions";
 
 export const revalidate = 60;
 export const dynamic = 'force-dynamic';
@@ -82,6 +84,22 @@ export default async function ContentDetailPage({
     getRelatedContent(content.id, content.categoryId, 6),
     auth(),
   ]);
+
+  const userRole = (session?.user?.role as "VISITOR" | "USER" | "PREMIUM" | "ADMIN" | "SUPER_ADMIN" | undefined) ?? "VISITOR";
+
+  if (!canAccessContent(userRole, content.accessLevel)) {
+    return (
+    <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="font-display text-2xl">Premium content</h1>
+      <p className="mt-3 text-text-muted">
+        This content is available to Premium members only.
+      </p>
+      <Link href="/upgrade" className="mt-6 inline-block rounded-sm bg-brass px-5 py-2 font-mono text-sm text-black">
+        Upgrade to Premium
+      </Link>
+    </div>
+  );
+}
 
   // Fire-and-forget view increment (don't block render on it).
   prisma.content
@@ -198,8 +216,14 @@ export default async function ContentDetailPage({
           </p>
 
           <div className="mt-8">
-            <h2 className="mb-3 font-display text-xl">Download links</h2>
-            <DownloadLinksList links={content.downloadLinks} contentSlug={content.slug} />
+            <h2 className="mb-3 font-display text-xl">
+              {content.hasSeasons ? "Seasons & Episodes" : "Download links"}
+            </h2>
+            {content.hasSeasons ? (
+              <SeasonEpisodeList seasons={content.seasons} />
+            ) : (
+              <DownloadLinksList links={content.downloadLinks} contentSlug={content.slug} />
+            )}
           </div>
         </div>
       </div>
