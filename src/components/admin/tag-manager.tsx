@@ -8,6 +8,7 @@ export function TagManager({ initialTags }: { initialTags: Tag[] }) {
   const [tags, setTags] = useState(initialTags);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
   async function addTag(e: React.FormEvent) {
     e.preventDefault();
@@ -23,6 +24,8 @@ export function TagManager({ initialTags }: { initialTags: Tag[] }) {
       const data = await res.json();
       setTags((prev) => [...prev, data.tag]);
       setName("");
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
     }
   }
 
@@ -44,9 +47,11 @@ export function TagManager({ initialTags }: { initialTags: Tag[] }) {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-ink hover:bg-brass-bright"
+          className={`rounded-sm px-4 py-2 text-sm font-medium text-ink transition-colors ${
+            justAdded ? "bg-teal" : "bg-brass hover:bg-brass-bright"
+          }`}
         >
-          Add
+          {justAdded ? "Added ✓" : "Add"}
         </button>
       </form>
 

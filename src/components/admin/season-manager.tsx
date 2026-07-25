@@ -110,6 +110,7 @@ function SeasonBlock({
 }) {
   const [title, setTitle] = useState(season.title ?? "");
   const [seasonNumber, setSeasonNumber] = useState(season.seasonNumber);
+  const [seasonSaved, setSeasonSaved] = useState(false);
   const router = useRouter();
 
   async function saveSeasonMeta() {
@@ -120,6 +121,8 @@ function SeasonBlock({
     });
     if (res.ok) {
       onUpdate({ title, seasonNumber });
+      setSeasonSaved(true);
+      setTimeout(() => setSeasonSaved(false), 2000);
       router.refresh();
     }
   }
@@ -175,9 +178,11 @@ function SeasonBlock({
         />
         <button
           onClick={saveSeasonMeta}
-          className="rounded-sm border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text"
+          className={`rounded-sm border px-3 py-1.5 text-xs transition-colors ${
+            seasonSaved ? "border-teal text-teal" : "border-border text-text-muted hover:text-text"
+          }`}
         >
-          Save
+          {seasonSaved ? "Saved ✓" : "Save"}
         </button>
         <button onClick={onDelete} className="text-xs text-danger hover:underline">
           Delete season
@@ -231,6 +236,7 @@ function EpisodeBlock({
       : [{ ...emptyLink }]
   );
   const [saving, setSaving] = useState(false);
+  const [episodeSaved, setEpisodeSaved] = useState(false);
   const router = useRouter();
 
   function updateLink(i: number, patch: Partial<DownloadLink>) {
@@ -261,6 +267,8 @@ function EpisodeBlock({
     setSaving(false);
     if (res.ok) {
       onUpdate({ title, episodeNumber, downloadLinks: links });
+      setEpisodeSaved(true);
+      setTimeout(() => setEpisodeSaved(false), 2000);
       router.refresh();
     }
   }
@@ -288,9 +296,11 @@ function EpisodeBlock({
         <button
           disabled={saving}
           onClick={save}
-          className="rounded-sm bg-brass px-3 py-1 text-xs font-medium text-ink hover:bg-brass-bright"
+          className={`rounded-sm px-3 py-1 text-xs font-medium text-ink transition-colors ${
+            episodeSaved ? "bg-teal" : "bg-brass hover:bg-brass-bright"
+          }`}
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? "Saving…" : episodeSaved ? "Saved ✓" : "Save"}
         </button>
         <button onClick={onDelete} className="text-xs text-danger hover:underline">
           Delete

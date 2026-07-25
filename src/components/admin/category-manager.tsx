@@ -62,6 +62,8 @@ async function toggleHidden(id: string, current: boolean) {
     setEditIcon(c.icon ?? "");
   }
 
+  const [savedId, setSavedId] = useState<string | null>(null);
+
   async function saveEdit(id: string) {
     const res = await fetch("/api/admin/categories", {
       method: "PATCH",
@@ -83,6 +85,8 @@ async function toggleHidden(id: string, current: boolean) {
         )
       );
       setEditingId(null);
+      setSavedId(id);
+      setTimeout(() => setSavedId(null), 2000);
       router.refresh();
     }
   }
@@ -139,6 +143,7 @@ async function toggleHidden(id: string, current: boolean) {
                     >
                       {editingId === c.id ? "Cancel" : "Edit"}
                     </button>
+                    {savedId === c.id && <span className="text-xs text-teal">Saved ✓</span>}
                   </div>
                 </td>
               </tr>

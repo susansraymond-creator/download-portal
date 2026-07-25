@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 export async function SiteFooter() {
-  const siteNameSetting = await prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null);
+  const [siteNameSetting, descSetting] = await Promise.all([
+    prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null),
+    prisma.setting.findUnique({ where: { key: "siteDescription" } }).catch(() => null),
+  ]);
   const siteName = (siteNameSetting?.value as string) || "The Stacks";
+  const siteDescription =
+    (descSetting?.value as string) ||
+    "A personal archive of content the site owner holds the rights to distribute. Files live on external storage — this catalog only indexes them.";
   return (
     <footer className="mt-auto border-t border-border bg-surface/40">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -10,9 +16,7 @@ export async function SiteFooter() {
           <div>
             <p className="font-display text-lg">{siteName}</p>
             <p className="mt-2 max-w-xs text-sm text-text-muted">
-              A personal archive of content the site owner holds the rights
-              to distribute. Files live on external storage — this catalog
-              only indexes them.
+              {siteDescription}
             </p>
           </div>
 

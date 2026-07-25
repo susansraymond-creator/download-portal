@@ -115,3 +115,43 @@ export async function PATCH(
     user: { id: user.id, role: user.role, isBanned: user.isBanned, isActive: user.isActive },
   });
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { session, response } = await requireAdmin();
+  if (response) return response;
+
+  // Only SUPER_ADMIN can delete accounts, and never their own account
+  // or another SUPER_ADMIN's account (prevents accidental lockout).
+  if (session!.user.role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Only super admins can delete users." }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  if (id === session!.user.id) {
+    return NextResponse.json({ error: "You cannot delete your own account." }, { status: 400 });
+  }
+
+  const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!target) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+  if (target.role === "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Cannot delete another super admin." }, { status: 400 });
+  }
+
+  await prisma.user.delete({ where: { id } }).catch(() => null);
+
+  await logAudit({
+    userId: session!.user.id,
+    action: "USER_DELETED",
+    entity: "User",
+    entityId: id,
+    ipAddress: getClientIp(req.headers),
+  });
+
+  return NextResponse.json({ ok: true });
+}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
 import { ContentCard } from "@/components/content-card";
 import {
   getFeaturedContent,
@@ -10,20 +11,34 @@ import {
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "The Stacks — A personal, well-kept archive",
-  description:
-    "A curated download catalog for personally owned and licensed digital content. Browse by category, see what's new, and find what's popular.",
-  alternates: { canonical: "/" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const [siteNameSetting, descSetting] = await Promise.all([
+    prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null),
+    prisma.setting.findUnique({ where: { key: "siteDescription" } }).catch(() => null),
+  ]);
+  const siteName = (siteNameSetting?.value as string) || "The Stacks";
+  const siteDescription =
+    (descSetting?.value as string) ||
+    "A curated download catalog for personally owned and licensed digital content. Browse by category, see what's new, and find what's popular.";
+
+  return {
+    title: `${siteName} — A personal, well-kept archive`,
+    description: siteDescription,
+    alternates: { canonical: "/" },
+  };
+}
 
 export default async function HomePage() {
-  const [featured, recent, popular, categories] = await Promise.all([
+  const [featured, recent, popular, categories, heroDescSetting] = await Promise.all([
     getFeaturedContent(6),
     getRecentContent(8),
     getPopularContent(8),
     getCategories(),
+    prisma.setting.findUnique({ where: { key: "siteDescription" } }).catch(() => null),
   ]);
+  const heroDescription =
+    (heroDescSetting?.value as string) ||
+    "Every title here is catalogued, tagged, and linked to a direct download the site owner controls. No streaming, no uploads from strangers — just a well-kept index.";
 
   return (
     <div>
@@ -35,9 +50,7 @@ export default async function HomePage() {
             A personal archive, organized like it matters.
           </h1>
           <p className="mt-4 max-w-xl text-text-muted">
-            Every title here is catalogued, tagged, and linked to a direct
-            download the site owner controls. No streaming, no uploads from
-            strangers — just a well-kept index.
+            {heroDescription}
           </p>
           <div className="mt-8 flex gap-3">
             <Link

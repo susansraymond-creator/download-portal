@@ -86,6 +86,7 @@ export function ContentEditorForm({
   const [links, setLinks] = useState<DownloadLinkForm[]>(initial?.downloadLinks ?? [emptyLink]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   function onTitleChange(v: string) {
     setTitle(v);
@@ -150,8 +151,11 @@ export function ContentEditorForm({
       return;
     }
 
-    router.push("/admin/content");
-    router.refresh();
+    setJustSaved(true);
+    setTimeout(() => {
+      router.push("/admin/content");
+      router.refresh();
+    }, 600);
   }
 
   async function onDelete() {
@@ -429,9 +433,11 @@ export function ContentEditorForm({
         <button
           type="submit"
           disabled={loading}
-          className="rounded-sm bg-brass px-5 py-2.5 text-sm font-medium text-ink hover:bg-brass-bright disabled:opacity-60"
+          className={`rounded-sm px-5 py-2.5 text-sm font-medium text-ink transition-colors disabled:opacity-60 ${
+            justSaved ? "bg-teal" : "bg-brass hover:bg-brass-bright"
+          }`}
         >
-          {loading ? "Saving…" : "Save"}
+          {loading ? "Saving…" : justSaved ? "Saved ✓" : "Save"}
         </button>
         <button
           type="button"

@@ -24,23 +24,28 @@ const jetbrainsMono = JetBrains_Mono({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const verificationSetting = await prisma.setting
-    .findUnique({ where: { key: "googleSiteVerification" } })
-    .catch(() => null);
+  const [verificationSetting, siteNameSetting, descSetting] = await Promise.all([
+    prisma.setting.findUnique({ where: { key: "googleSiteVerification" } }).catch(() => null),
+    prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null),
+    prisma.setting.findUnique({ where: { key: "siteDescription" } }).catch(() => null),
+  ]);
   const siteVerification =
     (verificationSetting?.value as string) || process.env.GOOGLE_SITE_VERIFICATION;
+  const siteName = (siteNameSetting?.value as string) || "The Stacks";
+  const siteDescription =
+    (descSetting?.value as string) ||
+    "A curated download catalog for personally owned and licensed digital content.";
 
   return {
     metadataBase: new URL(siteUrl),
     title: {
-      default: "The Stacks — Personal Content Archive",
-      template: "%s | The Stacks",
+      default: `${siteName} — Personal Content Archive`,
+      template: `%s | ${siteName}`,
     },
-    description:
-      "A curated download catalog for personally owned and licensed digital content.",
+    description: siteDescription,
     openGraph: {
       type: "website",
-      siteName: "The Stacks",
+      siteName,
     },
     twitter: {
       card: "summary_large_image",

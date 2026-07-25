@@ -23,7 +23,13 @@ type User = {
   createdAt: Date;
 };
 
-export function UserRow({ user }: { user: User }) {
+export function UserRow({
+  user,
+  roleOptions = ["VISITOR", "USER", "PREMIUM", "ADMIN", "SUPER_ADMIN"],
+}: {
+  user: User;
+  roleOptions?: string[];
+}) {
   const [role, setRole] = useState(user.role);
   const [isBanned, setIsBanned] = useState(user.isBanned);
   const [loading, setLoading] = useState(false);
@@ -58,11 +64,22 @@ export function UserRow({ user }: { user: User }) {
     }
   }
 
-  function togglePermission(perm: string) {
+function togglePermission(perm: string) {
     const next = permissions.includes(perm)
       ? permissions.filter((p) => p !== perm)
       : [...permissions, perm];
     update({ permissions: next });
+  }
+
+  async function deleteUser() {
+    if (!confirm(`Permanently delete "${user.name ?? user.email}"? This cannot be undone.`)) return;
+    const res = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Failed to delete user.");
+    }
   }
 
   return (
@@ -76,15 +93,15 @@ export function UserRow({ user }: { user: User }) {
           onChange={(e) => update({ role: e.target.value })}
           className="rounded-sm border border-border bg-surface px-2 py-1 text-xs"
         >
-          <option value="VISITOR">VISITOR</option>
-          <option value="USER">USER</option>
-          <option value="PREMIUM">PREMIUM</option>
-          <option value="ADMIN">ADMIN</option>
-          <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+          {roleOptions.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
         </select>
       </td>
       <td className="py-2.5 font-mono text-xs text-text-muted">
-        {new Date(user.createdAt).toLocaleDateString()}
+        {new Date(user.createdAt).toLocaleDateString("en-US")}
       </td>
       <td className="py-2.5 text-right">
         <div className="flex items-center justify-end gap-2">
@@ -102,6 +119,9 @@ export function UserRow({ user }: { user: User }) {
             className={`stamp ${isBanned ? "text-danger" : "text-teal"}`}
           >
             {isBanned ? "Banned" : "Active"}
+          </button>
+          <button onClick={deleteUser} className="text-xs text-danger hover:underline">
+            Delete
           </button>
         </div>
         {showPermissions && role === "ADMIN" && (
