@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { SearchBar } from "@/components/search-bar";
 import { LogoutButton } from "@/components/logout-button";
-
 export async function SiteHeader() {
   const session = await auth();
+  const siteNameSetting = await prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null);
+  const siteName = (siteNameSetting?.value as string) || "The Stacks";
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-ink/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3 sm:px-6">
         <Link href="/" className="font-display text-xl tracking-tight text-text">
-          The <span className="text-brass">Stacks</span>
+          {siteName}
         </Link>
 
         <nav className="hidden items-center gap-5 text-sm text-text-muted md:flex">

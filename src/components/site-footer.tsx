@@ -1,12 +1,14 @@
 import Link from "next/link";
-
-export function SiteFooter() {
+import { prisma } from "@/lib/prisma";
+export async function SiteFooter() {
+  const siteNameSetting = await prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null);
+  const siteName = (siteNameSetting?.value as string) || "The Stacks";
   return (
     <footer className="mt-auto border-t border-border bg-surface/40">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <div className="grid gap-8 sm:grid-cols-3">
           <div>
-            <p className="font-display text-lg">The Stacks</p>
+            <p className="font-display text-lg">{siteName}</p>
             <p className="mt-2 max-w-xs text-sm text-text-muted">
               A personal archive of content the site owner holds the rights
               to distribute. Files live on external storage — this catalog
@@ -34,7 +36,7 @@ export function SiteFooter() {
         </div>
 
         <p className="mt-8 border-t border-border pt-6 text-xs text-text-muted">
-          © {new Date().getFullYear()} The Stacks. All indexed content is owned by, or
+          © {new Date().getFullYear()} {siteName}. All indexed content is owned by, or
           distributed with written permission of, the site operator.
         </p>
       </div>
