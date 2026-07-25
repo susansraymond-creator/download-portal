@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ContentCard } from "@/components/content-card";
 import {
   getFeaturedContent,
@@ -8,6 +9,13 @@ import {
 } from "@/lib/content";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "The Stacks — A personal, well-kept archive",
+  description:
+    "A curated download catalog for personally owned and licensed digital content. Browse by category, see what's new, and find what's popular.",
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   const [featured, recent, popular, categories] = await Promise.all([

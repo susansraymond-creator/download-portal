@@ -4,7 +4,10 @@ export async function GET() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
   const items = await prisma.content.findMany({
-    where: { status: "PUBLISHED" },
+    where: {
+      status: "PUBLISHED",
+      OR: [{ categoryId: null }, { category: { isHidden: false } }],
+    },
     orderBy: { publishedAt: "desc" },
     take: 50,
     select: { title: true, slug: true, shortDescription: true, publishedAt: true, createdAt: true },

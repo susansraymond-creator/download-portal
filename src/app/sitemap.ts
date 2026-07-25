@@ -10,7 +10,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     take: 5000,
   });
 
-  const categories = await prisma.category.findMany({ select: { slug: true } });
+  const categories = await prisma.category.findMany({
+    where: { isHidden: false },
+    select: { slug: true },
+  });
 
   return [
     { url: `${siteUrl}/`, changeFrequency: "daily", priority: 1 },

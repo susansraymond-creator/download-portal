@@ -5,6 +5,7 @@ import { contentSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { invalidateCache } from "@/lib/redis";
 import { getClientIp } from "@/lib/rate-limit";
+import { notifyNewContent } from "@/lib/notifications";
 
 export async function GET(
   _req: NextRequest,
@@ -109,6 +110,10 @@ export async function PATCH(
   });
 
   await invalidateCache("content:*");
+
+  if (data.status === "PUBLISHED" && existing.status !== "PUBLISHED") {
+    await notifyNewContent(updated).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true, content: updated });
 }

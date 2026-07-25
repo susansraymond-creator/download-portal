@@ -10,6 +10,9 @@ const schema = z.object({
   siteDescription: z.string().max(300).optional(),
   contactEmail: z.string().email().optional().or(z.literal("")),
   googleAnalyticsId: z.string().max(30).optional().or(z.literal("")),
+  googleSiteVerification: z.string().max(100).optional().or(z.literal("")),
+  googleAdsensePublisherId: z.string().max(30).optional().or(z.literal("")),
+  adsenseEnabled: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -20,13 +23,12 @@ export async function PATCH(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
 
   const entries = Object.entries(parsed.data).filter(([, v]) => v !== undefined);
-
   await prisma.$transaction(
     entries.map(([key, value]) =>
       prisma.setting.upsert({
         where: { key },
-        create: { key, value: value as string },
-        update: { value: value as string },
+        create: { key, value: value as string | boolean },
+        update: { value: value as string | boolean },
       })
     )
   );

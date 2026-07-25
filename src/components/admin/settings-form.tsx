@@ -7,6 +7,9 @@ type Settings = {
   siteDescription: string;
   contactEmail: string;
   googleAnalyticsId: string;
+  googleSiteVerification: string;
+  googleAdsensePublisherId: string;
+  adsenseEnabled: boolean;
 };
 
 export function SettingsForm({ initial }: { initial: Settings }) {
@@ -50,7 +53,24 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         value={form.googleAnalyticsId}
         onChange={(v) => setForm({ ...form, googleAnalyticsId: v })}
       />
-
+      <Field
+        label="Google Search Console verification code"
+        value={form.googleSiteVerification}
+        onChange={(v) => setForm({ ...form, googleSiteVerification: v })}
+      />
+      <Field
+        label="Google AdSense Publisher ID (e.g. ca-pub-xxxxxxxxxxxxxxxx)"
+        value={form.googleAdsensePublisherId}
+        onChange={(v) => setForm({ ...form, googleAdsensePublisherId: v })}
+      />
+      <label className="flex items-center gap-2 text-sm text-text-muted">
+        <input
+          type="checkbox"
+          checked={form.adsenseEnabled}
+          onChange={(e) => setForm({ ...form, adsenseEnabled: e.target.checked })}
+        />
+        Enable AdSense ads on the site
+      </label>
       <button
         type="submit"
         disabled={loading}

@@ -5,6 +5,7 @@ import { contentSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { invalidateCache } from "@/lib/redis";
 import { getClientIp } from "@/lib/rate-limit";
+import { notifyNewContent } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
   const { response } = await requirePermission("MANAGE_CONTENT");
@@ -90,6 +91,10 @@ export async function POST(req: NextRequest) {
   });
 
   await invalidateCache("content:*");
+
+  if (content.status === "PUBLISHED") {
+    await notifyNewContent(content).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true, content });
 }

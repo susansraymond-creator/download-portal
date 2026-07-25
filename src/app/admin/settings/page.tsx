@@ -16,6 +16,9 @@ export default async function AdminSettingsPage() {
             "A curated download catalog for personally owned and licensed digital content.",
           contactEmail: (settings.contactEmail as string) ?? "",
           googleAnalyticsId: (settings.googleAnalyticsId as string) ?? "",
+          googleSiteVerification: (settings.googleSiteVerification as string) ?? "",
+          googleAdsensePublisherId: (settings.googleAdsensePublisherId as string) ?? "",
+          adsenseEnabled: (settings.adsenseEnabled as boolean) ?? false,
         }}
       />
     </div>
