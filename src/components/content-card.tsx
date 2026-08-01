@@ -11,6 +11,8 @@ type CardContent = {
   posterUrl: string | null;
   isFeatured: boolean;
   downloadCount: number;
+  viewCount: number;
+  imdbRating: number | null;
   category: { name: string; slug: string } | null;
 };
 
@@ -68,8 +70,13 @@ export function ContentCard({ content }: { content: CardContent }) {
           <p className="line-clamp-2 text-sm text-text-muted">{content.shortDescription}</p>
         )}
 
-        <p className="mt-auto pt-2 font-mono text-[0.65rem] text-text-muted">
-          {content.downloadCount.toLocaleString()} downloads
+        <p className="mt-auto flex items-center gap-3 pt-2 font-mono text-[0.65rem] text-text-muted">
+          {content.imdbRating != null && (
+            <span className="flex items-center gap-1 text-brass">
+              ★ {content.imdbRating.toFixed(1)}
+            </span>
+          )}
+          <span>{content.viewCount.toLocaleString()} views</span>
         </p>
       </div>
     </Link>

@@ -45,6 +45,7 @@ export default async function EditContentPage({
           isFeatured: content.isFeatured,
           hasSeasons: content.hasSeasons,
           accessLevel: content.accessLevel,
+          imdbRating: content.imdbRating?.toString() ?? "",
           publishAt: content.publishAt ? content.publishAt.toISOString().slice(0, 16) : "",
           metaTitle: content.metaTitle ?? "",
           metaDescription: content.metaDescription ?? "",

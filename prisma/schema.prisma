@@ -188,6 +188,7 @@ model Content {
 
   viewCount     Int @default(0)
   downloadCount Int @default(0)
+  imdbRating    Float?
   hasSeasons    Boolean @default(false)
 
   // SEO

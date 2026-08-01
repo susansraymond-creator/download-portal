@@ -60,6 +60,7 @@ export function ContentEditorForm({
     isFeatured: boolean;
     hasSeasons: boolean;
     accessLevel: string;
+    imdbRating: string;
     publishAt: string;
     metaTitle: string;
     metaDescription: string;
@@ -80,6 +81,7 @@ export function ContentEditorForm({
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
   const [hasSeasons, setHasSeasons] = useState(initial?.hasSeasons ?? false);
   const [accessLevel, setAccessLevel] = useState(initial?.accessLevel ?? "NORMAL");
+  const [imdbRating, setImdbRating] = useState(initial?.imdbRating ?? "");
   const [publishAt, setPublishAt] = useState(initial?.publishAt ?? "");
   const [metaTitle, setMetaTitle] = useState(initial?.metaTitle ?? "");
   const [metaDescription, setMetaDescription] = useState(initial?.metaDescription ?? "");
@@ -116,6 +118,7 @@ export function ContentEditorForm({
       isFeatured,
       hasSeasons,
       accessLevel,
+      imdbRating: imdbRating ? Number(imdbRating) : undefined,
       publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
       metaTitle: metaTitle || undefined,
       metaDescription: metaDescription || undefined,
@@ -280,6 +283,18 @@ export function ContentEditorForm({
             <option value="NORMAL">Normal</option>
             <option value="PREMIUM">Premium</option>
           </select>
+        </Field>
+
+        <Field label="IMDb rating (0–10, optional)">
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            max="10"
+            value={imdbRating}
+            onChange={(e) => setImdbRating(e.target.value)}
+            className="w-full max-w-xs rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+          />
         </Field>
       </section>
 

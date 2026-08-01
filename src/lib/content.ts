@@ -21,6 +21,7 @@ export const CARD_SELECT = {
   isFeatured: true,
   viewCount: true,
   downloadCount: true,
+  imdbRating: true,
   publishedAt: true,
   createdAt: true,
   category: { select: { name: true, slug: true } },

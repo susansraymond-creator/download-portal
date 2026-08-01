@@ -65,6 +65,7 @@ export const contentSchema = z.object({
   isFeatured: z.boolean().default(false),
   hasSeasons: z.boolean().default(false),
   accessLevel: z.enum(["NORMAL", "PREMIUM"]).default("NORMAL"),
+  imdbRating: z.number().min(0).max(10).optional().nullable(),
   publishAt: z.string().datetime().optional().nullable(),
   metaTitle: z.string().max(70).optional().nullable(),
   metaDescription: z.string().max(160).optional().nullable(),

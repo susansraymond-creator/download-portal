@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       isFeatured: data.isFeatured,
       hasSeasons: data.hasSeasons,
       accessLevel: data.accessLevel,
+      imdbRating: data.imdbRating,
       publishAt: data.publishAt ? new Date(data.publishAt) : null,
       publishedAt: data.status === "PUBLISHED" ? new Date() : null,
       metaTitle: data.metaTitle,
