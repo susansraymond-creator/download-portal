@@ -9,6 +9,7 @@ import { DownloadLinksList } from "@/components/download-links-list";
 import { SeasonEpisodeList } from "@/components/season-episode-list";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ReportButton } from "@/components/report-button";
+import { VoteWidget } from "@/components/vote-widget";
 import { auth } from "@/lib/auth";
 import { canAccessContent } from "@/lib/permissions";
 
@@ -89,17 +90,17 @@ export default async function ContentDetailPage({
 
   if (!canAccessContent(userRole, content.accessLevel)) {
     return (
-    <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-      <h1 className="font-display text-2xl">Premium content</h1>
-      <p className="mt-3 text-text-muted">
-        This content is available to Premium members only.
-      </p>
-      <Link href="/upgrade" className="mt-6 inline-block rounded-sm bg-brass px-5 py-2 font-mono text-sm text-black">
-        Upgrade to Premium
-      </Link>
-    </div>
-  );
-}
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+        <h1 className="font-display text-2xl">Premium content</h1>
+        <p className="mt-3 text-text-muted">
+          This content is available to Premium members only.
+        </p>
+        <Link href="/upgrade" className="mt-6 inline-block rounded-sm bg-brass px-5 py-2 font-mono text-sm text-black">
+          Upgrade to Premium
+        </Link>
+      </div>
+    );
+  }
 
   // Fire-and-forget view increment (don't block render on it).
   prisma.content
@@ -211,9 +212,50 @@ export default async function ContentDetailPage({
             </div>
           )}
 
+          <div className="index-card mt-4 grid grid-cols-1 gap-x-6 gap-y-2 p-4 text-sm sm:grid-cols-2">
+            {content.imdbRating != null && (
+              <div className="flex gap-2">
+                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">IMDb</span>
+                <span className="text-brass">★ {content.imdbRating.toFixed(1)}/10</span>
+              </div>
+            )}
+            {content.category && (
+              <div className="flex gap-2">
+                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Genre</span>
+                <span>{content.category.name}</span>
+              </div>
+            )}
+            {content.primaryLanguage && (
+              <div className="flex gap-2">
+                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Language</span>
+                <span>{content.primaryLanguage}</span>
+              </div>
+            )}
+            {content.primaryQuality && (
+              <div className="flex gap-2">
+                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Quality</span>
+                <span className="text-teal">{content.primaryQuality}</span>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Type</span>
+              <span>{TYPE_LABELS[content.type] ?? content.type}</span>
+            </div>
+            {content.updateLabel && (
+              <div className="flex gap-2">
+                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Status</span>
+                <span className="text-teal">{content.updateLabel}</span>
+              </div>
+            )}
+          </div>
+
           <p className="mt-6 whitespace-pre-line leading-relaxed text-text-muted">
             {content.description}
           </p>
+
+          <div className="mt-8">
+            <VoteWidget contentId={content.id} />
+          </div>
 
           <div className="mt-8">
             <h2 className="mb-3 font-display text-xl">

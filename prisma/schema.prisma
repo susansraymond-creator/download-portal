@@ -189,6 +189,9 @@ model Content {
   viewCount     Int @default(0)
   downloadCount Int @default(0)
   imdbRating    Float?
+  primaryQuality  String?
+  primaryLanguage String?
+  updateLabel     String?
   hasSeasons    Boolean @default(false)
 
   // SEO
@@ -209,6 +212,7 @@ model Content {
 
   relatedTo   Content[] @relation("RelatedContent")
   relatedFrom Content[] @relation("RelatedContent")
+  votes       ContentVote[]
 
   @@index([slug])
   @@index([status, publishAt])
@@ -248,6 +252,7 @@ model Episode {
   description   String?    @db.Text
   thumbnailUrl  String?
   duration      String?
+  watchUrl      String?
   firstUploadedAt DateTime @default(now())
   lastUpdatedAt   DateTime @updatedAt
 
@@ -403,6 +408,24 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+enum VoteType {
+  MUST_WATCH
+  GOOD
+  AVERAGE
+}
+
+model ContentVote {
+  id        String   @id @default(cuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  voteType  VoteType
+  voterKey  String
+  createdAt DateTime @default(now())
+
+  @@unique([contentId, voterKey])
+  @@index([contentId])
 }
 
 model Setting {

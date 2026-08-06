@@ -21,6 +21,7 @@ type Episode = {
   description: string | null;
   thumbnailUrl: string | null;
   duration: string | null;
+  watchUrl: string | null;
   downloadLinks: DownloadLink[];
 };
 
@@ -224,6 +225,7 @@ function EpisodeBlock({
 }) {
   const [title, setTitle] = useState(episode.title);
   const [episodeNumber, setEpisodeNumber] = useState(episode.episodeNumber);
+  const [watchUrl, setWatchUrl] = useState(episode.watchUrl ?? "");
   const [links, setLinks] = useState<DownloadLink[]>(
     episode.downloadLinks.length > 0
       ? episode.downloadLinks.map((l) => ({
@@ -251,6 +253,7 @@ function EpisodeBlock({
       body: JSON.stringify({
         title,
         episodeNumber,
+        watchUrl: watchUrl || undefined,
         downloadLinks: links
           .filter((l) => l.providerName && l.url)
           .map((l) => ({
@@ -286,6 +289,12 @@ function EpisodeBlock({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="flex-1 rounded-sm border border-border bg-surface px-2 py-1 text-xs"
+        />
+        <input
+          value={watchUrl}
+          onChange={(e) => setWatchUrl(e.target.value)}
+          placeholder="Watch Online URL (optional)"
+          className="w-48 rounded-sm border border-border bg-surface px-2 py-1 text-xs"
         />
         <button
           onClick={() => setLinks((prev) => [...prev, { ...emptyLink }])}

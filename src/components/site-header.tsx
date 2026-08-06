@@ -3,9 +3,29 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SearchBar } from "@/components/search-bar";
 import { LogoutButton } from "@/components/logout-button";
+
+const BADGE_COLORS = [
+  "bg-red-600",
+  "bg-blue-600",
+  "bg-green-600",
+  "bg-purple-600",
+  "bg-orange-600",
+  "bg-pink-600",
+  "bg-teal-600",
+  "bg-indigo-600",
+];
+
 export async function SiteHeader() {
   const session = await auth();
-  const siteNameSetting = await prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null);
+  const [siteNameSetting, categories] = await Promise.all([
+    prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null),
+    prisma.category.findMany({
+      where: { isHidden: false },
+      orderBy: { name: "asc" },
+      take: 12,
+      select: { name: true, slug: true },
+    }),
+  ]);
   const siteName = (siteNameSetting?.value as string) || "The Stacks";
 
   return (
@@ -50,6 +70,24 @@ export async function SiteHeader() {
           )}
         </div>
       </div>
+
+      {categories.length > 0 && (
+        <div className="border-t border-border/50 bg-ink/60">
+          <div className="mx-auto flex max-w-7xl flex-wrap gap-2 px-4 py-2.5 sm:px-6">
+            {categories.map((c, i) => (
+              <Link
+                key={c.slug}
+                href={`/browse?category=${c.slug}`}
+                className={`rounded-sm px-2.5 py-1 font-mono text-[0.65rem] font-bold uppercase tracking-wide text-white transition-opacity hover:opacity-80 ${
+                  BADGE_COLORS[i % BADGE_COLORS.length]
+                }`}
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

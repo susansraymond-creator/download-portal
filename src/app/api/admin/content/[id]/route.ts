@@ -76,6 +76,9 @@ export async function PATCH(
         ...(data.hasSeasons !== undefined && { hasSeasons: data.hasSeasons }),
         ...(data.accessLevel !== undefined && { accessLevel: data.accessLevel }),
         ...(data.imdbRating !== undefined && { imdbRating: data.imdbRating }),
+        ...(data.primaryQuality !== undefined && { primaryQuality: data.primaryQuality }),
+        ...(data.primaryLanguage !== undefined && { primaryLanguage: data.primaryLanguage }),
+        ...(data.updateLabel !== undefined && { updateLabel: data.updateLabel }),
         ...(data.publishAt !== undefined && {
           publishAt: data.publishAt ? new Date(data.publishAt) : null,
         }),

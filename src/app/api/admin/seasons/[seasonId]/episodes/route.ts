@@ -20,6 +20,7 @@ const episodeSchema = z.object({
   description: z.string().max(2000).optional(),
   thumbnailUrl: z.string().url().optional().or(z.literal("")),
   duration: z.string().optional(),
+  watchUrl: z.string().url().optional().or(z.literal("")),
   downloadLinks: z.array(episodeLinkSchema).default([]),
 });
 
@@ -61,6 +62,7 @@ export async function POST(
       description: parsed.data.description || null,
       thumbnailUrl: parsed.data.thumbnailUrl || null,
       duration: parsed.data.duration || null,
+      watchUrl: parsed.data.watchUrl || null,
       downloadLinks: {
         create: parsed.data.downloadLinks.map((l, i) => ({
           providerName: l.providerName,

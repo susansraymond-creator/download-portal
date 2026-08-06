@@ -61,6 +61,9 @@ export function ContentEditorForm({
     hasSeasons: boolean;
     accessLevel: string;
     imdbRating: string;
+    primaryQuality: string;
+    primaryLanguage: string;
+    updateLabel: string;
     publishAt: string;
     metaTitle: string;
     metaDescription: string;
@@ -82,6 +85,9 @@ export function ContentEditorForm({
   const [hasSeasons, setHasSeasons] = useState(initial?.hasSeasons ?? false);
   const [accessLevel, setAccessLevel] = useState(initial?.accessLevel ?? "NORMAL");
   const [imdbRating, setImdbRating] = useState(initial?.imdbRating ?? "");
+  const [primaryQuality, setPrimaryQuality] = useState(initial?.primaryQuality ?? "");
+  const [primaryLanguage, setPrimaryLanguage] = useState(initial?.primaryLanguage ?? "");
+  const [updateLabel, setUpdateLabel] = useState(initial?.updateLabel ?? "");
   const [publishAt, setPublishAt] = useState(initial?.publishAt ?? "");
   const [metaTitle, setMetaTitle] = useState(initial?.metaTitle ?? "");
   const [metaDescription, setMetaDescription] = useState(initial?.metaDescription ?? "");
@@ -119,6 +125,9 @@ export function ContentEditorForm({
       hasSeasons,
       accessLevel,
       imdbRating: imdbRating ? Number(imdbRating) : undefined,
+      primaryQuality: primaryQuality || undefined,
+      primaryLanguage: primaryLanguage || undefined,
+      updateLabel: updateLabel || undefined,
       publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
       metaTitle: metaTitle || undefined,
       metaDescription: metaDescription || undefined,
@@ -294,6 +303,34 @@ export function ContentEditorForm({
             value={imdbRating}
             onChange={(e) => setImdbRating(e.target.value)}
             className="w-full max-w-xs rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+          />
+        </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Quality badge (e.g. WEB-DL, HDTC)">
+            <input
+              value={primaryQuality}
+              onChange={(e) => setPrimaryQuality(e.target.value)}
+              placeholder="WEB-DL"
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+            />
+          </Field>
+          <Field label="Language badge (e.g. Hindi Dubbed, Multi)">
+            <input
+              value={primaryLanguage}
+              onChange={(e) => setPrimaryLanguage(e.target.value)}
+              placeholder="Hindi Dubbed"
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+            />
+          </Field>
+        </div>
+
+        <Field label="Update label (e.g. S01 | Ep 1-8 Added)">
+          <input
+            value={updateLabel}
+            onChange={(e) => setUpdateLabel(e.target.value)}
+            placeholder="S01 | Ep 1-8 Added"
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
           />
         </Field>
       </section>
