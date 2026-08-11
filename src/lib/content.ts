@@ -25,6 +25,7 @@ export const CARD_SELECT = {
   primaryQuality: true,
   primaryLanguage: true,
   updateLabel: true,
+  seriesStatus: true,
   updatedAt: true,
   publishedAt: true,
   createdAt: true,
@@ -64,6 +65,45 @@ export async function getPopularContent(limit = 12) {
   );
 }
 
+export async function getHomeFeed(limit = 60) {
+  return cached(`content:homefeed:${limit}`, 60, () =>
+    prisma.content.findMany({
+      where: PUBLISHED_WHERE,
+      select: CARD_SELECT,
+      orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }],
+      take: limit,
+    })
+  );
+}
+
+export async function getHomeFeedPage(page: number, perPage = 30) {
+  const [items, total] = await Promise.all([
+    prisma.content.findMany({
+      where: PUBLISHED_WHERE,
+      select: CARD_SELECT,
+      orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }],
+      skip: (page - 1) * perPage,
+      take: perPage,
+    }),
+    prisma.content.count({ where: PUBLISHED_WHERE }),
+  ]);
+  return { items, total, pages: Math.ceil(total / perPage) };
+}
+
+export async function getDistinctLanguages() {
+  return cached("content:languages", 3600, async () => {
+    const rows = await prisma.content.findMany({
+      where: { ...PUBLISHED_WHERE, primaryLanguage: { not: null } },
+      select: { primaryLanguage: true },
+      distinct: ["primaryLanguage"],
+    });
+    return rows
+      .map((r) => r.primaryLanguage!)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+  });
+}
+
 export async function getCategories() {
   return cached("categories:all", 600, () =>
     prisma.category.findMany({
@@ -79,6 +119,7 @@ export interface BrowseParams {
   category?: string;
   type?: string;
   tag?: string;
+  language?: string;
   sort: "newest" | "popular" | "downloads" | "title";
   page: number;
   perPage: number;
@@ -97,6 +138,7 @@ export async function browseContent(params: BrowseParams) {
   if (params.category) where.category = { slug: params.category };
   if (params.type) where.type = params.type as Prisma.EnumContentTypeFilter["equals"];
   if (params.tag) where.tags = { some: { slug: params.tag } };
+  if (params.language) where.primaryLanguage = { equals: params.language, mode: "insensitive" };
 
   const orderBy: Prisma.ContentOrderByWithRelationInput =
     params.sort === "popular"

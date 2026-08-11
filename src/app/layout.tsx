@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { prisma } from "@/lib/prisma";
 
 const fraunces = Fraunces({
@@ -86,7 +85,6 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         <SiteHeader />
         <main className="flex-1">{children}</main>
-        <SiteFooter />
         {adsenseEnabled && adsensePublisherId && (
           <script
             async

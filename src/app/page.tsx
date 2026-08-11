@@ -2,11 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { ContentCard } from "@/components/content-card";
+import { Pagination } from "@/components/pagination";
+import { FilterGrid } from "@/components/filter-grid";
 import {
-  getFeaturedContent,
-  getRecentContent,
-  getPopularContent,
+  getHomeFeedPage,
   getCategories,
+  getDistinctLanguages,
 } from "@/lib/content";
 
 export const revalidate = 60;
@@ -28,46 +29,22 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function HomePage() {
-  const [featured, recent, popular, categories, heroDescSetting] = await Promise.all([
-    getFeaturedContent(6),
-    getRecentContent(8),
-    getPopularContent(8),
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+
+  const [{ items: feed, pages: totalPages }, categories, languages] = await Promise.all([
+    getHomeFeedPage(page, 30),
     getCategories(),
-    prisma.setting.findUnique({ where: { key: "siteDescription" } }).catch(() => null),
+    getDistinctLanguages(),
   ]);
-  const heroDescription =
-    (heroDescSetting?.value as string) ||
-    "Every title here is catalogued, tagged, and linked to a direct download the site owner controls. No streaming, no uploads from strangers — just a well-kept index.";
 
   return (
     <div>
-      {/* Hero */}
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-          <p className="stamp text-brass">Catalog No. 001 — Est. {new Date().getFullYear()}</p>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl leading-tight sm:text-5xl">
-            A personal archive, organized like it matters.
-          </h1>
-          <p className="mt-4 max-w-xl text-text-muted">
-            {heroDescription}
-          </p>
-          <div className="mt-8 flex gap-3">
-            <Link
-              href="/browse"
-              className="rounded-sm bg-brass px-5 py-2.5 text-sm font-medium text-ink hover:bg-brass-bright transition-colors"
-            >
-              Browse the catalog
-            </Link>
-            <Link
-              href="/browse?sort=newest"
-              className="rounded-sm border border-border px-5 py-2.5 text-sm text-text-muted hover:text-text hover:border-text-muted transition-colors"
-            >
-              See what's new
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* Categories rail */}
       {categories.length > 0 && (
@@ -86,41 +63,43 @@ export default async function HomePage() {
         </section>
       )}
 
-      {featured.length > 0 && (
-        <Section title="Featured" href="/browse?featured=1" items={featured} />
+      {feed.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <div className="mb-6 text-center">
+            <h2 className="font-display text-3xl font-bold uppercase tracking-wide text-teal">
+              Recently Updated
+            </h2>
+            <p className="mt-1 font-mono text-xs text-text-muted">
+              🎬 New day, new movie 😊
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {feed.map((item) => (
+              <ContentCard key={item.id} content={item} />
+            ))}
+          </div>
+          <Pagination currentPage={page} totalPages={totalPages} basePath="/" />
+        </section>
       )}
-      {recent.length > 0 && (
-        <Section title="Recently added" href="/browse?sort=newest" items={recent} />
-      )}
-      {popular.length > 0 && (
-        <Section title="Popular downloads" href="/browse?sort=popular" items={popular} />
-      )}
-    </div>
-  );
-}
 
-function Section({
-  title,
-  href,
-  items,
-}: {
-  title: string;
-  href: string;
-  items: Awaited<ReturnType<typeof getRecentContent>>;
-}) {
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h2 className="font-display text-2xl">{title}</h2>
-        <Link href={href} className="text-sm text-brass hover:text-brass-bright">
-          View all →
-        </Link>
-      </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((item) => (
-          <ContentCard key={item.id} content={item} />
-        ))}
-      </div>
-    </section>
+      <section className="mx-auto max-w-7xl space-y-6 px-4 py-12 sm:px-6">
+        {languages.length > 0 && (
+          <FilterGrid
+            title="Languages"
+            items={languages.map((l) => ({ name: l, slug: l }))}
+            paramName="language"
+            color="brass"
+          />
+        )}
+        {categories.length > 0 && (
+          <FilterGrid
+            title="Genres"
+            items={categories.map((c) => ({ name: c.name, slug: c.slug }))}
+            paramName="category"
+            color="teal"
+          />
+        )}
+      </section>
+    </div>
   );
 }

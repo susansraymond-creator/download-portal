@@ -69,6 +69,8 @@ export const contentSchema = z.object({
   primaryQuality: z.string().max(30).optional().nullable(),
   primaryLanguage: z.string().max(50).optional().nullable(),
   updateLabel: z.string().max(50).optional().nullable(),
+  seriesStatus: z.enum(["ONGOING", "COMPLETED"]).optional().nullable(),
+  watchUrl: z.string().url().optional().nullable(),
   publishAt: z.string().datetime().optional().nullable(),
   metaTitle: z.string().max(70).optional().nullable(),
   metaDescription: z.string().max(160).optional().nullable(),
@@ -92,7 +94,8 @@ export const searchQuerySchema = z.object({
   category: z.string().optional(),
   type: z.string().optional(),
   tag: z.string().optional(),
+  language: z.string().optional(),
   sort: z.enum(["newest", "popular", "downloads", "title"]).default("newest"),
   page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(48).default(24),
+  perPage: z.coerce.number().int().min(1).max(60).default(30),
 });

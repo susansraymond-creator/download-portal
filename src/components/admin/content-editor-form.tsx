@@ -64,10 +64,12 @@ export function ContentEditorForm({
     primaryQuality: string;
     primaryLanguage: string;
     updateLabel: string;
+    seriesStatus: string;
     publishAt: string;
     metaTitle: string;
     metaDescription: string;
     downloadLinks: DownloadLinkForm[];
+    watchUrl: string;
   };
 }) {
   const router = useRouter();
@@ -88,10 +90,25 @@ export function ContentEditorForm({
   const [primaryQuality, setPrimaryQuality] = useState(initial?.primaryQuality ?? "");
   const [primaryLanguage, setPrimaryLanguage] = useState(initial?.primaryLanguage ?? "");
   const [updateLabel, setUpdateLabel] = useState(initial?.updateLabel ?? "");
+  const [seriesStatus, setSeriesStatus] = useState(initial?.seriesStatus ?? "");
   const [publishAt, setPublishAt] = useState(initial?.publishAt ?? "");
   const [metaTitle, setMetaTitle] = useState(initial?.metaTitle ?? "");
   const [metaDescription, setMetaDescription] = useState(initial?.metaDescription ?? "");
   const [links, setLinks] = useState<DownloadLinkForm[]>(initial?.downloadLinks ?? [emptyLink]);
+  const [watchUrl, setWatchUrl] = useState(initial?.watchUrl ?? "");
+  const downloadUrl = links[0]?.url ?? "";
+
+  function setDownloadUrl(url: string) {
+    setLinks((prev) => {
+      const next = [...prev];
+      if (next.length === 0) {
+        next.push({ ...emptyLink, providerName: "Download", url });
+      } else {
+        next[0] = { ...next[0], providerName: next[0].providerName || "Download", url };
+      }
+      return next;
+    });
+  }
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -128,22 +145,14 @@ export function ContentEditorForm({
       primaryQuality: primaryQuality || undefined,
       primaryLanguage: primaryLanguage || undefined,
       updateLabel: updateLabel || undefined,
+      seriesStatus: seriesStatus || undefined,
       publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
       metaTitle: metaTitle || undefined,
       metaDescription: metaDescription || undefined,
-      downloadLinks: links
-        .filter((l) => l.providerName && l.url)
-        .map((l) => ({
-          providerName: l.providerName,
-          url: l.url,
-          fileSize: l.fileSize || undefined,
-          version: l.version || undefined,
-          quality: l.quality || undefined,
-          language: l.language || undefined,
-          notes: l.notes || undefined,
-          status: l.status,
-          sortOrder: 0,
-        })),
+      watchUrl: watchUrl || undefined,
+      downloadLinks: downloadUrl
+        ? [{ providerName: "Download", url: downloadUrl, status: "ACTIVE" as const, sortOrder: 0 }]
+        : [],
     };
 
     const res = await fetch(
@@ -173,7 +182,12 @@ export function ContentEditorForm({
   async function onDelete() {
     if (!contentId) return;
     if (!confirm("Delete this content permanently? This cannot be undone.")) return;
-    await fetch(`/api/admin/content/${contentId}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/content/${contentId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || `Failed to delete (status ${res.status}). Check console for details.`);
+      return;
+    }
     router.push("/admin/content");
     router.refresh();
   }
@@ -333,6 +347,20 @@ export function ContentEditorForm({
             className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
           />
         </Field>
+
+        {hasSeasons && (
+          <Field label="Series status">
+            <select
+              value={seriesStatus}
+              onChange={(e) => setSeriesStatus(e.target.value)}
+              className="w-full max-w-xs rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+            >
+              <option value="">Not set</option>
+              <option value="ONGOING">Ongoing</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          </Field>
+        )}
       </section>
 
       <section className="index-card space-y-4 p-6">
@@ -384,90 +412,23 @@ export function ContentEditorForm({
 
       {!hasSeasons && (
       <section className="index-card space-y-4 p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg">Download links</h2>
-          <button
-            type="button"
-            onClick={() => setLinks((prev) => [...prev, { ...emptyLink }])}
-            className="rounded-sm border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text"
-          >
-            + Add link
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {links.map((link, i) => (
-            <div key={i} className="grid gap-3 rounded-sm border border-border p-4 sm:grid-cols-2">
-              <Field label="Provider name">
-                <input
-                  value={link.providerName}
-                  onChange={(e) => updateLink(i, { providerName: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Download URL">
-                <input
-                  value={link.url}
-                  onChange={(e) => updateLink(i, { url: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="File size">
-                <input
-                  value={link.fileSize}
-                  onChange={(e) => updateLink(i, { fileSize: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Version">
-                <input
-                  value={link.version}
-                  onChange={(e) => updateLink(i, { version: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Quality">
-                <input
-                  value={link.quality}
-                  onChange={(e) => updateLink(i, { quality: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Language">
-                <input
-                  value={link.language}
-                  onChange={(e) => updateLink(i, { language: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Notes">
-                <input
-                  value={link.notes}
-                  onChange={(e) => updateLink(i, { notes: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Status">
-                <select
-                  value={link.status}
-                  onChange={(e) => updateLink(i, { status: e.target.value as DownloadLinkForm["status"] })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="DISABLED">Disabled</option>
-                  <option value="BROKEN">Broken</option>
-                </select>
-              </Field>
-              <button
-                type="button"
-                onClick={() => setLinks((prev) => prev.filter((_, idx) => idx !== i))}
-                className="col-span-2 text-left text-xs text-danger hover:underline"
-              >
-                Remove link
-              </button>
-            </div>
-          ))}
-        </div>
+        <h2 className="font-display text-lg">Links</h2>
+        <Field label="Watch link (optional)">
+          <input
+            value={watchUrl}
+            onChange={(e) => setWatchUrl(e.target.value)}
+            placeholder="https://..."
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+          />
+        </Field>
+        <Field label="Download link">
+          <input
+            value={downloadUrl}
+            onChange={(e) => setDownloadUrl(e.target.value)}
+            placeholder="https://..."
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+          />
+        </Field>
       </section>
       )}
 

@@ -125,6 +125,11 @@ enum ContentType {
   ARCHIVE
 }
 
+enum SeriesStatus {
+  ONGOING
+  COMPLETED
+}
+
 enum ContentAccessLevel {
   NORMAL
   PREMIUM
@@ -192,6 +197,8 @@ model Content {
   primaryQuality  String?
   primaryLanguage String?
   updateLabel     String?
+  seriesStatus    SeriesStatus?
+  watchUrl        String?
   hasSeasons    Boolean @default(false)
 
   // SEO

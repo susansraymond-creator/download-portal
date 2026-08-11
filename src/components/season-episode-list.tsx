@@ -80,7 +80,7 @@ export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
             <div key={season.id} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {filtered
                 .slice()
-                .sort((a, b) => b.episodeNumber - a.episodeNumber)
+                .sort((a, b) => a.episodeNumber - b.episodeNumber)
                 .map((ep) => (
                   <div key={ep.id} className="rounded-sm border border-border bg-surface/40 p-4 text-center">
                     <p className="font-display text-base">Episode {ep.episodeNumber}</p>
@@ -99,7 +99,9 @@ export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
 
                     <div className="mt-3 space-y-2">
                       {ep.downloadLinks.length === 0 ? (
-                        <p className="text-xs text-text-muted">No links yet.</p>
+                        !ep.watchUrl && (
+                          <p className="text-xs text-text-muted">No links yet.</p>
+                        )
                       ) : (
                         ep.downloadLinks.map((l) => (
                           

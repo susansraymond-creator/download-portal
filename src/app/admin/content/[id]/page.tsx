@@ -49,6 +49,8 @@ export default async function EditContentPage({
           primaryQuality: content.primaryQuality ?? "",
           primaryLanguage: content.primaryLanguage ?? "",
           updateLabel: content.updateLabel ?? "",
+          seriesStatus: content.seriesStatus ?? "",
+          watchUrl: content.watchUrl ?? "",
           publishAt: content.publishAt ? content.publishAt.toISOString().slice(0, 16) : "",
           metaTitle: content.metaTitle ?? "",
           metaDescription: content.metaDescription ?? "",

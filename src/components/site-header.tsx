@@ -35,13 +35,6 @@ export async function SiteHeader() {
           {siteName}
         </Link>
 
-        <nav className="hidden items-center gap-5 text-sm text-text-muted md:flex">
-          <Link href="/browse" className="hover:text-text">Browse</Link>
-          <Link href="/browse?sort=newest" className="hover:text-text">Recently added</Link>
-          <Link href="/browse?sort=popular" className="hover:text-text">Popular</Link>
-          <Link href="/browse?featured=1" className="hover:text-text">Featured</Link>
-        </nav>
-
         <div className="ml-auto flex flex-1 items-center justify-end gap-4">
           <div className="hidden w-full max-w-sm sm:block">
             <SearchBar />

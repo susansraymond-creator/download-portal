@@ -82,7 +82,7 @@ export default async function ContentDetailPage({
   if (!content) notFound();
 
   const [related, session] = await Promise.all([
-    getRelatedContent(content.id, content.categoryId, 6),
+    getRelatedContent(content.id, content.categoryId, 10),
     auth(),
   ]);
 
@@ -243,8 +243,16 @@ export default async function ContentDetailPage({
             </div>
             {content.updateLabel && (
               <div className="flex gap-2">
-                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Status</span>
+                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Update</span>
                 <span className="text-teal">{content.updateLabel}</span>
+              </div>
+            )}
+            {content.seriesStatus && (
+              <div className="flex gap-2">
+                <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Status</span>
+                <span className={content.seriesStatus === "COMPLETED" ? "text-teal" : "text-brass"}>
+                  {content.seriesStatus === "COMPLETED" ? "Completed" : "Ongoing"}
+                </span>
               </div>
             )}
           </div>
@@ -259,12 +267,25 @@ export default async function ContentDetailPage({
 
           <div className="mt-8">
             <h2 className="mb-3 font-display text-xl">
-              {content.hasSeasons ? "Seasons & Episodes" : "Download links"}
+              {content.hasSeasons ? "Seasons & Episodes" : "Links"}
             </h2>
             {content.hasSeasons ? (
               <SeasonEpisodeList seasons={content.seasons} />
             ) : (
-              <DownloadLinksList links={content.downloadLinks} contentSlug={content.slug} />
+              <div className="space-y-2">
+                {content.watchUrl && (
+                  
+                  <a
+                    href={content.watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="inline-flex items-center gap-1 text-sm text-teal hover:underline"
+                  >
+                    ▶ Watch Online
+                  </a>
+                )}
+                <DownloadLinksList links={content.downloadLinks} contentSlug={content.slug} />
+              </div>
             )}
           </div>
         </div>
@@ -273,7 +294,7 @@ export default async function ContentDetailPage({
       {related.length > 0 && (
         <section className="mt-16">
           <h2 className="mb-6 font-display text-2xl">Related content</h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {related.map((item) => (
               <ContentCard key={item.id} content={item} />
             ))}

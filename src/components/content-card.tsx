@@ -15,6 +15,7 @@ type CardContent = {
   primaryQuality?: string | null;
   primaryLanguage?: string | null;
   updateLabel?: string | null;
+  seriesStatus?: string | null;
   updatedAt?: Date;
   createdAt?: Date;
   category: { name: string; slug: string } | null;
@@ -54,7 +55,7 @@ export function ContentCard({ content }: { content: CardContent }) {
       href={`/content/${content.slug}`}
       className="index-card group flex flex-col overflow-hidden transition-transform hover:-translate-y-0.5"
     >
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface-raised">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-raised">
         {image ? (
           <Image
             src={image}
@@ -90,29 +91,38 @@ export function ContentCard({ content }: { content: CardContent }) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-1.5 p-3">
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-1 flex-col gap-1 p-2.5">
+        <div className="flex flex-wrap items-center gap-1">
           {content.primaryLanguage && (
-            <span className="rounded-sm bg-teal px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-ink">
+            <span className="rounded-sm bg-teal px-1 py-0.5 font-mono text-[0.55rem] font-bold text-ink">
               {content.primaryLanguage.toUpperCase()}
             </span>
           )}
-          <span className="rounded-sm bg-danger/90 px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-white">
+          <span className="rounded-sm bg-danger/90 px-1 py-0.5 font-mono text-[0.55rem] font-bold text-white">
             {(content.category?.name || TYPE_LABELS[content.type] || content.type).toUpperCase()}
           </span>
         </div>
 
         {content.updateLabel && (
-          <span className="w-fit rounded-sm border border-teal/50 px-1.5 py-0.5 font-mono text-[0.6rem] text-teal">
+          <span className="w-fit rounded-sm border border-teal/50 px-1 py-0.5 font-mono text-[0.55rem] text-teal">
             {content.updateLabel}
           </span>
         )}
+        {content.seriesStatus && (
+          <span
+            className={`w-fit rounded-sm px-1 py-0.5 font-mono text-[0.55rem] font-bold text-ink ${
+              content.seriesStatus === "COMPLETED" ? "bg-teal" : "bg-brass"
+            }`}
+          >
+            {content.seriesStatus === "COMPLETED" ? "COMPLETED" : "ONGOING"}
+          </span>
+        )}
 
-        <h3 className="line-clamp-2 font-display text-sm leading-snug text-text group-hover:text-brass-bright">
+        <h3 className="line-clamp-1 font-display text-xs leading-snug text-text group-hover:text-brass-bright">
           {content.title}
         </h3>
 
-        <p className="mt-auto flex items-center justify-between pt-1 font-mono text-[0.6rem] text-text-muted">
+        <p className="mt-auto flex items-center justify-between pt-1 font-mono text-[0.55rem] text-text-muted">
           <span className="flex items-center gap-1">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />

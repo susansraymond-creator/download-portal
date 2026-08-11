@@ -79,6 +79,8 @@ export async function PATCH(
         ...(data.primaryQuality !== undefined && { primaryQuality: data.primaryQuality }),
         ...(data.primaryLanguage !== undefined && { primaryLanguage: data.primaryLanguage }),
         ...(data.updateLabel !== undefined && { updateLabel: data.updateLabel }),
+        ...(data.seriesStatus !== undefined && { seriesStatus: data.seriesStatus }),
+        ...(data.watchUrl !== undefined && { watchUrl: data.watchUrl }),
         ...(data.publishAt !== undefined && {
           publishAt: data.publishAt ? new Date(data.publishAt) : null,
         }),

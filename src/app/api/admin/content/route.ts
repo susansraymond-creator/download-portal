@@ -62,6 +62,8 @@ export async function POST(req: NextRequest) {
       primaryQuality: data.primaryQuality,
       primaryLanguage: data.primaryLanguage,
       updateLabel: data.updateLabel,
+      seriesStatus: data.seriesStatus,
+      watchUrl: data.watchUrl,
       publishAt: data.publishAt ? new Date(data.publishAt) : null,
       publishedAt: data.status === "PUBLISHED" ? new Date() : null,
       metaTitle: data.metaTitle,
