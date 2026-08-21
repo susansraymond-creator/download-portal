@@ -58,6 +58,7 @@ export default async function EditContentPage({
             id: l.id,
             providerName: l.providerName,
             url: l.url,
+            embedUrl: l.embedUrl ?? "",
             fileSize: l.fileSize ?? "",
             version: l.version ?? "",
             quality: l.quality ?? "",

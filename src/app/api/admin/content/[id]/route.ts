@@ -90,9 +90,10 @@ export async function PATCH(
         ...(data.tagIds !== undefined && { tags: { set: data.tagIds.map((tid) => ({ id: tid })) } }),
         ...(data.downloadLinks !== undefined && {
           downloadLinks: {
-            create: data.downloadLinks.map((l, i) => ({
+                        create: data.downloadLinks.map((l, i) => ({
               providerName: l.providerName,
-              url: l.url,
+              url: l.url || l.embedUrl || "#",
+              embedUrl: l.embedUrl,
               fileSize: l.fileSize,
               version: l.version,
               quality: l.quality,

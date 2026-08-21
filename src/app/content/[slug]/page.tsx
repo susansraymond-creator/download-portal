@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ContentCard } from "@/components/content-card";
 import { DownloadLinksList } from "@/components/download-links-list";
 import { SeasonEpisodeList } from "@/components/season-episode-list";
+import { SmartPlayer } from "@/components/smart-player";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ReportButton } from "@/components/report-button";
 import { VoteWidget } from "@/components/vote-widget";
@@ -272,7 +273,8 @@ export default async function ContentDetailPage({
             {content.hasSeasons ? (
               <SeasonEpisodeList seasons={content.seasons} />
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
+                <SmartPlayer links={content.downloadLinks} />
                 {content.watchUrl && (
                   
                   <a
@@ -284,7 +286,12 @@ export default async function ContentDetailPage({
                     ▶ Watch Online
                   </a>
                 )}
-                <DownloadLinksList links={content.downloadLinks} contentSlug={content.slug} />
+                                <DownloadLinksList
+                  links={content.downloadLinks.filter(
+                    (l) => l.url && l.url !== "#" && l.url !== l.embedUrl
+                  )}
+                  contentSlug={content.slug}
+                />
               </div>
             )}
           </div>

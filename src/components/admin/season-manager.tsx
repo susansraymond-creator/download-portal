@@ -7,6 +7,7 @@ type DownloadLink = {
   id?: string;
   providerName: string;
   url: string;
+  embedUrl?: string | null;
   fileSize: string | null;
   quality: string | null;
   language: string | null;
@@ -37,12 +38,18 @@ type Season = {
 const emptyLink: DownloadLink = {
   providerName: "",
   url: "",
+  embedUrl: "",
   fileSize: "",
   quality: "",
   language: "",
   notes: "",
   status: "ACTIVE",
 };
+
+function extractSrc(value: string): string {
+  const match = value.match(/src=["']([^"']+)["']/i);
+  return match ? match[1] : value;
+}
 
 export function SeasonManager({
   contentId,
@@ -254,17 +261,21 @@ function EpisodeBlock({
         title,
         episodeNumber,
         watchUrl: watchUrl || undefined,
-        downloadLinks: links
-          .filter((l) => l.providerName && l.url)
-          .map((l) => ({
-            providerName: l.providerName,
-            url: l.url,
-            fileSize: l.fileSize || undefined,
-            quality: l.quality || undefined,
-            language: l.language || undefined,
-            notes: l.notes || undefined,
-            status: l.status,
-          })),
+                        downloadLinks: links
+          .filter((l) => l.providerName || l.url || l.embedUrl)
+          .map((l, i) => {
+            const cleanEmbed = l.embedUrl ? extractSrc(l.embedUrl) : "";
+            return {
+              providerName: l.providerName || `Server ${i + 1}`,
+              url: l.url || cleanEmbed,
+              embedUrl: cleanEmbed || undefined,
+              fileSize: l.fileSize || undefined,
+              quality: l.quality || undefined,
+              language: l.language || undefined,
+              notes: l.notes || undefined,
+              status: l.status,
+            };
+          }),
       }),
     });
     setSaving(false);
@@ -331,11 +342,17 @@ function EpisodeBlock({
               onChange={(e) => updateLink(i, { url: e.target.value })}
               className="col-span-2 rounded-sm border border-border bg-surface px-2 py-1 text-xs"
             />
-            <input
+                        <input
               placeholder="Quality"
               value={link.quality ?? ""}
               onChange={(e) => updateLink(i, { quality: e.target.value })}
               className="rounded-sm border border-border bg-surface px-2 py-1 text-xs"
+            />
+            <input
+              placeholder="Embed player URL (optional)"
+              value={link.embedUrl ?? ""}
+              onChange={(e) => updateLink(i, { embedUrl: e.target.value })}
+              className="col-span-2 rounded-sm border border-border bg-surface px-2 py-1 text-xs sm:col-span-4"
             />
           </div>
         ))}

@@ -72,9 +72,10 @@ export async function POST(req: NextRequest) {
       authorId: session!.user.id,
       tags: { connect: data.tagIds.map((id) => ({ id })) },
       downloadLinks: {
-        create: data.downloadLinks.map((l, i) => ({
+                create: data.downloadLinks.map((l, i) => ({
           providerName: l.providerName,
-          url: l.url,
+          url: l.url || l.embedUrl || "#",
+          embedUrl: l.embedUrl,
           fileSize: l.fileSize,
           version: l.version,
           quality: l.quality,

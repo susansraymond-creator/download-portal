@@ -8,6 +8,7 @@ type DownloadLinkForm = {
   id?: string;
   providerName: string;
   url: string;
+  embedUrl: string;
   fileSize: string;
   version: string;
   quality: string;
@@ -29,9 +30,15 @@ const CONTENT_TYPES = [
   "ARCHIVE",
 ];
 
+function extractSrc(value: string): string {
+  const match = value.match(/src=["']([^"']+)["']/i);
+  return match ? match[1] : value;
+}
+
 const emptyLink: DownloadLinkForm = {
   providerName: "",
   url: "",
+  embedUrl: "",
   fileSize: "",
   version: "",
   quality: "",
@@ -96,18 +103,9 @@ export function ContentEditorForm({
   const [metaDescription, setMetaDescription] = useState(initial?.metaDescription ?? "");
   const [links, setLinks] = useState<DownloadLinkForm[]>(initial?.downloadLinks ?? [emptyLink]);
   const [watchUrl, setWatchUrl] = useState(initial?.watchUrl ?? "");
-  const downloadUrl = links[0]?.url ?? "";
 
-  function setDownloadUrl(url: string) {
-    setLinks((prev) => {
-      const next = [...prev];
-      if (next.length === 0) {
-        next.push({ ...emptyLink, providerName: "Download", url });
-      } else {
-        next[0] = { ...next[0], providerName: next[0].providerName || "Download", url };
-      }
-      return next;
-    });
+  function updateLink(i: number, patch: Partial<DownloadLinkForm>) {
+    setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -116,10 +114,6 @@ export function ContentEditorForm({
   function onTitleChange(v: string) {
     setTitle(v);
     if (!slugTouched) setSlug(slugify(v, { lower: true, strict: true }));
-  }
-
-  function updateLink(i: number, patch: Partial<DownloadLinkForm>) {
-    setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
 
   async function onSubmit(e: React.FormEvent, saveAsStatus?: string) {
@@ -149,10 +143,24 @@ export function ContentEditorForm({
       publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
       metaTitle: metaTitle || undefined,
       metaDescription: metaDescription || undefined,
-      watchUrl: watchUrl || undefined,
-      downloadLinks: downloadUrl
-        ? [{ providerName: "Download", url: downloadUrl, status: "ACTIVE" as const, sortOrder: 0 }]
-        : [],
+            watchUrl: watchUrl || undefined,
+      downloadLinks: links
+        .filter((l) => l.providerName || l.url || l.embedUrl)
+        .map((l, i) => {
+          const cleanEmbed = l.embedUrl ? extractSrc(l.embedUrl) : "";
+          return {
+            providerName: l.providerName || `Server ${i + 1}`,
+            url: l.url || cleanEmbed,
+            embedUrl: cleanEmbed || undefined,
+            fileSize: l.fileSize || undefined,
+            version: l.version || undefined,
+            quality: l.quality || undefined,
+            language: l.language || undefined,
+            notes: l.notes || undefined,
+            status: l.status,
+            sortOrder: i,
+          };
+        }),
     };
 
     const res = await fetch(
@@ -412,8 +420,7 @@ export function ContentEditorForm({
 
       {!hasSeasons && (
       <section className="index-card space-y-4 p-6">
-        <h2 className="font-display text-lg">Links</h2>
-        <Field label="Watch link (optional)">
+        <Field label="Watch link (optional, opens in new tab)">
           <input
             value={watchUrl}
             onChange={(e) => setWatchUrl(e.target.value)}
@@ -421,14 +428,60 @@ export function ContentEditorForm({
             className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Download link">
-          <input
-            value={downloadUrl}
-            onChange={(e) => setDownloadUrl(e.target.value)}
-            placeholder="https://..."
-            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-          />
-        </Field>
+
+        <div className="flex items-center justify-between pt-2">
+          <h2 className="font-display text-lg">Servers / Download links</h2>
+          <button
+            type="button"
+            onClick={() => setLinks((prev) => [...prev, { ...emptyLink }])}
+            className="rounded-sm border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text"
+          >
+            + Add server
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {links.map((link, i) => (
+            <div key={i} className="grid gap-3 rounded-sm border border-border p-4 sm:grid-cols-2">
+              <Field label="Server name (e.g. Server 1)">
+                <input
+                  value={link.providerName}
+                  onChange={(e) => updateLink(i, { providerName: e.target.value })}
+                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </Field>
+              <Field label="Download URL">
+                <input
+                  value={link.url}
+                  onChange={(e) => updateLink(i, { url: e.target.value })}
+                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </Field>
+              <Field label="Embed player URL (optional — enables in-page player)">
+                <input
+                  value={link.embedUrl}
+                  onChange={(e) => updateLink(i, { embedUrl: e.target.value })}
+                  placeholder="https://.../player.php?v=..."
+                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </Field>
+              <Field label="Quality">
+                <input
+                  value={link.quality}
+                  onChange={(e) => updateLink(i, { quality: e.target.value })}
+                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </Field>
+              <button
+                type="button"
+                onClick={() => setLinks((prev) => prev.filter((_, idx) => idx !== i))}
+                className="col-span-2 text-left text-xs text-danger hover:underline"
+              >
+                Remove server
+              </button>
+            </div>
+          ))}
+        </div>
       </section>
       )}
 

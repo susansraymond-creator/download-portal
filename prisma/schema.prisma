@@ -275,6 +275,7 @@ model EpisodeDownloadLink {
   episode      Episode    @relation(fields: [episodeId], references: [id], onDelete: Cascade)
   providerName String
   url          String     @db.Text
+  embedUrl     String?    @db.Text
   fileSize     String?
   quality      String?
   language     String?
@@ -294,6 +295,7 @@ model DownloadLink {
   content      Content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
   providerName String
   url          String     @db.Text
+  embedUrl     String?    @db.Text
   fileSize     String?
   version      String?
   quality      String?

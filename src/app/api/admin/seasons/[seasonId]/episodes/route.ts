@@ -5,8 +5,9 @@ import { requirePermission } from "@/lib/api-guard";
 import { invalidateCache } from "@/lib/redis";
 
 const episodeLinkSchema = z.object({
-  providerName: z.string().min(1),
-  url: z.string().url(),
+  providerName: z.string().min(1).default("Server"),
+  url: z.string().url().optional().or(z.literal("")),
+  embedUrl: z.string().url().optional().or(z.literal("")),
   fileSize: z.string().optional(),
   quality: z.string().optional(),
   language: z.string().optional(),
@@ -64,9 +65,10 @@ export async function POST(
       duration: parsed.data.duration || null,
       watchUrl: parsed.data.watchUrl || null,
       downloadLinks: {
-        create: parsed.data.downloadLinks.map((l, i) => ({
-          providerName: l.providerName,
-          url: l.url,
+            create: parsed.data.downloadLinks.map((l, i) => ({
+      providerName: l.providerName,
+      url: l.url || l.embedUrl || "#",
+          embedUrl: l.embedUrl || null,
           fileSize: l.fileSize || null,
           quality: l.quality || null,
           language: l.language || null,

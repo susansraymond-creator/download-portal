@@ -27,8 +27,9 @@ export const resetPasswordSchema = z.object({
 });
 
 export const downloadLinkSchema = z.object({
-  providerName: z.string().min(1).max(60),
-  url: z.string().url(),
+  providerName: z.string().min(1).max(60).default("Server"),
+  url: z.string().url().optional().or(z.literal("")).nullable(),
+  embedUrl: z.string().url().optional().or(z.literal("")).nullable(),
   fileSize: z.string().max(30).optional().nullable(),
   version: z.string().max(30).optional().nullable(),
   quality: z.string().max(30).optional().nullable(),
