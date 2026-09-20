@@ -53,9 +53,10 @@ export async function generateMetadata(): Promise<Metadata> {
       index: true,
       follow: true,
     },
-    verification: {
+        verification: {
       google: siteVerification,
     },
+    manifest: "/manifest.json",
   };
 }
 
