@@ -190,7 +190,6 @@ export default async function ContentDetailPage({
         </div>
 
         <div>
-          <p className="stamp text-brass">{TYPE_LABELS[content.type] ?? content.type}</p>
           <h1 className="mt-3 font-display text-3xl leading-tight sm:text-4xl">{content.title}</h1>
 
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-text-muted">
@@ -238,10 +237,6 @@ export default async function ContentDetailPage({
                 <span className="text-teal">{content.primaryQuality}</span>
               </div>
             )}
-            <div className="flex gap-2">
-              <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Type</span>
-              <span>{TYPE_LABELS[content.type] ?? content.type}</span>
-            </div>
             {content.updateLabel && (
               <div className="flex gap-2">
                 <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">Update</span>

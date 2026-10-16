@@ -57,6 +57,14 @@ export async function generateMetadata(): Promise<Metadata> {
       google: siteVerification,
     },
     manifest: "/manifest.json",
+    icons: {
+      apple: "/icon-192.png",
+    },
+    appleWebApp: {
+      capable: true,
+      title: "KDL",
+      statusBarStyle: "black-translucent",
+    },
   };
 }
 

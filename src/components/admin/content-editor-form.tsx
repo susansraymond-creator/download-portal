@@ -248,19 +248,7 @@ export function ContentEditorForm({
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Type">
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-            >
-              {CONTENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </Field>
+          
 
           <Field label="Category">
             <select

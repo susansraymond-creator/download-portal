@@ -98,9 +98,11 @@ export function ContentCard({ content }: { content: CardContent }) {
               {content.primaryLanguage.toUpperCase()}
             </span>
           )}
-          <span className="rounded-sm bg-danger/90 px-1 py-0.5 font-mono text-[0.55rem] font-bold text-white">
-            {(content.category?.name || TYPE_LABELS[content.type] || content.type).toUpperCase()}
-          </span>
+          {content.category && (
+            <span className="rounded-sm bg-danger/90 px-1 py-0.5 font-mono text-[0.55rem] font-bold text-white">
+              {content.category.name.toUpperCase()}
+            </span>
+          )}
         </div>
 
         {content.updateLabel && (

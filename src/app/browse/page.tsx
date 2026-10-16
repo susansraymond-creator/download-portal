@@ -118,34 +118,6 @@ export default async function BrowsePage({
               ))}
             </ul>
           </div>
-
-          <div>
-            <p className="mb-2 font-mono text-xs uppercase tracking-wide text-text-muted">
-              Type
-            </p>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <Link
-                  href={buildHref({ type: undefined, page: 1 })}
-                  className={!params.type ? "text-brass" : "text-text-muted hover:text-text"}
-                >
-                  All types
-                </Link>
-              </li>
-              {TYPES.map((t) => (
-                <li key={t}>
-                  <Link
-                    href={buildHref({ type: t, page: 1 })}
-                    className={
-                      params.type === t ? "text-brass" : "text-text-muted hover:text-text"
-                    }
-                  >
-                    {t.charAt(0) + t.slice(1).toLowerCase()}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </aside>
 
         <div>
