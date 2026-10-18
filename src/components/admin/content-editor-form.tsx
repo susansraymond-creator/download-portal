@@ -50,10 +50,14 @@ const emptyLink: DownloadLinkForm = {
 export function ContentEditorForm({
   contentId,
   categories,
+  qualityOptions,
+  languageOptions,
   initial,
 }: {
   contentId?: string;
   categories: Category[];
+  qualityOptions: string[];
+  languageOptions: string[];
   initial?: {
     title: string;
     slug: string;
@@ -87,7 +91,7 @@ export function ContentEditorForm({
   const [shortDescription, setShortDescription] = useState(initial?.shortDescription ?? "");
   const [type, setType] = useState(initial?.type ?? "VIDEO");
   const [status, setStatus] = useState(initial?.status ?? "DRAFT");
-  const [posterUrl, setPosterUrl] = useState(initial?.posterUrl ?? "");
+  const [posterUrl, setPosterUrl] = useState(initial?.posterUrl || initial?.thumbnailUrl || "");
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnailUrl ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
@@ -95,7 +99,12 @@ export function ContentEditorForm({
   const [accessLevel, setAccessLevel] = useState(initial?.accessLevel ?? "NORMAL");
   const [imdbRating, setImdbRating] = useState(initial?.imdbRating ?? "");
   const [primaryQuality, setPrimaryQuality] = useState(initial?.primaryQuality ?? "");
-  const [primaryLanguage, setPrimaryLanguage] = useState(initial?.primaryLanguage ?? "");
+    const [languages, setLanguages] = useState<string[]>(
+    (initial?.primaryLanguage ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
   const [updateLabel, setUpdateLabel] = useState(initial?.updateLabel ?? "");
   const [seriesStatus, setSeriesStatus] = useState(initial?.seriesStatus ?? "");
   const [publishAt, setPublishAt] = useState(initial?.publishAt ?? "");
@@ -103,6 +112,20 @@ export function ContentEditorForm({
   const [metaDescription, setMetaDescription] = useState(initial?.metaDescription ?? "");
   const [links, setLinks] = useState<DownloadLinkForm[]>(initial?.downloadLinks ?? [emptyLink]);
   const [watchUrl, setWatchUrl] = useState(initial?.watchUrl ?? "");
+  const qualityList =
+    primaryQuality && !qualityOptions.includes(primaryQuality)
+      ? [primaryQuality, ...qualityOptions]
+      : qualityOptions;
+  const languageList = [
+    ...languageOptions,
+    ...languages.filter((l) => !languageOptions.includes(l)),
+  ];
+
+  function toggleLanguage(name: string) {
+    setLanguages((prev) =>
+      prev.includes(name) ? prev.filter((l) => l !== name) : [...prev, name]
+    );
+  }
 
   function updateLink(i: number, patch: Partial<DownloadLinkForm>) {
     setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -129,20 +152,20 @@ export function ContentEditorForm({
       type,
       status: saveAsStatus ?? status,
       posterUrl: posterUrl || undefined,
-      thumbnailUrl: thumbnailUrl || undefined,
+      thumbnailUrl: posterUrl || undefined,
       categoryId: categoryId || undefined,
       tagIds: [],
       isFeatured,
       hasSeasons,
       accessLevel,
       imdbRating: imdbRating ? Number(imdbRating) : undefined,
-      primaryQuality: primaryQuality || undefined,
-      primaryLanguage: primaryLanguage || undefined,
+      primaryQuality: primaryQuality || null,
+      primaryLanguage: languages.length > 0 ? languages.join(", ") : null,
       updateLabel: updateLabel || undefined,
       seriesStatus: seriesStatus || undefined,
       publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
-      metaTitle: metaTitle || undefined,
-      metaDescription: metaDescription || undefined,
+      metaTitle: title.slice(0, 70),
+      metaDescription: description.slice(0, 160),
             watchUrl: watchUrl || undefined,
       downloadLinks: links
         .filter((l) => l.providerName || l.url || l.embedUrl)
@@ -228,15 +251,6 @@ export function ContentEditorForm({
           />
         </Field>
 
-        <Field label="Short description (card preview)">
-          <input
-            value={shortDescription}
-            onChange={(e) => setShortDescription(e.target.value)}
-            maxLength={300}
-            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-          />
-        </Field>
-
         <Field label="Full description">
           <textarea
             required
@@ -266,22 +280,13 @@ export function ContentEditorForm({
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Poster image URL">
-            <input
-              value={posterUrl}
-              onChange={(e) => setPosterUrl(e.target.value)}
-              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-            />
-          </Field>
-          <Field label="Thumbnail image URL">
-            <input
-              value={thumbnailUrl}
-              onChange={(e) => setThumbnailUrl(e.target.value)}
-              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-            />
-          </Field>
-        </div>
+        <Field label="Poster image URL (used for card and detail page)">
+          <input
+            value={posterUrl}
+            onChange={(e) => setPosterUrl(e.target.value)}
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+          />
+        </Field>
 
         <label className="flex items-center gap-2 text-sm text-text-muted">
           <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
@@ -316,24 +321,45 @@ export function ContentEditorForm({
           />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Quality badge (e.g. WEB-DL, HDTC)">
-            <input
-              value={primaryQuality}
-              onChange={(e) => setPrimaryQuality(e.target.value)}
-              placeholder="WEB-DL"
-              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-            />
-          </Field>
-          <Field label="Language badge (e.g. Hindi Dubbed, Multi)">
-            <input
-              value={primaryLanguage}
-              onChange={(e) => setPrimaryLanguage(e.target.value)}
-              placeholder="Hindi Dubbed"
-              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-            />
-          </Field>
-        </div>
+        <Field label="Quality badge">
+          <select
+            value={primaryQuality}
+            onChange={(e) => setPrimaryQuality(e.target.value)}
+            className="w-full max-w-xs rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+          >
+            <option value="">None</option>
+            {qualityList.map((q) => (
+              <option key={q} value={q}>
+                {q}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Language badge (select one or more)">
+          <div className="flex flex-wrap gap-2">
+            {languageList.map((l) => {
+              const on = languages.includes(l);
+              return (
+                <button
+                  type="button"
+                  key={l}
+                  onClick={() => toggleLanguage(l)}
+                  className={`rounded-sm border px-2.5 py-1 text-xs transition-colors ${
+                    on
+                      ? "border-teal bg-teal text-ink"
+                      : "border-border text-text-muted hover:text-text"
+                  }`}
+                >
+                  {l}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1 text-xs text-text-muted">
+            Need another option? Add it from Admin → Badges.
+          </p>
+        </Field>
 
         <Field label="Update label (e.g. S01 | Ep 1-8 Added)">
           <input
@@ -383,27 +409,6 @@ export function ContentEditorForm({
             />
           </Field>
         </div>
-      </section>
-
-      <section className="index-card space-y-4 p-6">
-        <h2 className="font-display text-lg">SEO</h2>
-        <Field label="Meta title">
-          <input
-            value={metaTitle}
-            onChange={(e) => setMetaTitle(e.target.value)}
-            maxLength={70}
-            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-          />
-        </Field>
-        <Field label="Meta description">
-          <textarea
-            value={metaDescription}
-            onChange={(e) => setMetaDescription(e.target.value)}
-            maxLength={160}
-            rows={2}
-            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-          />
-        </Field>
       </section>
 
       {!hasSeasons && (

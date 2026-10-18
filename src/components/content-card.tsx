@@ -93,11 +93,18 @@ export function ContentCard({ content }: { content: CardContent }) {
 
       <div className="flex flex-1 flex-col gap-1 p-2.5">
         <div className="flex flex-wrap items-center gap-1">
-          {content.primaryLanguage && (
-            <span className="rounded-sm bg-teal px-1 py-0.5 font-mono text-[0.55rem] font-bold text-ink">
-              {content.primaryLanguage.toUpperCase()}
-            </span>
-          )}
+         {content.primaryLanguage
+            ?.split(",")
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .map((l) => (
+              <span
+                key={l}
+                className="rounded-sm bg-teal px-1 py-0.5 font-mono text-[0.55rem] font-bold text-ink"
+              >
+                {l.toUpperCase()}
+              </span>
+            ))}
           {content.category && (
             <span className="rounded-sm bg-danger/90 px-1 py-0.5 font-mono text-[0.55rem] font-bold text-white">
               {content.category.name.toUpperCase()}

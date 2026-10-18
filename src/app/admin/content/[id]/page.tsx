@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ContentEditorForm } from "@/components/admin/content-editor-form";
+import { getBadgeOptions } from "@/lib/badges";
 
 export default async function EditContentPage({
   params,
@@ -9,12 +10,13 @@ export default async function EditContentPage({
 }) {
   const { id } = await params;
 
-  const [content, categories] = await Promise.all([
+  const [content, categories, badgeOptions] = await Promise.all([
     prisma.content.findUnique({
       where: { id },
       include: { downloadLinks: { orderBy: { sortOrder: "asc" } } },
     }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
+    getBadgeOptions(),
   ]);
 
   if (!content) notFound();
@@ -32,6 +34,8 @@ export default async function EditContentPage({
       <ContentEditorForm
         contentId={content.id}
         categories={categories}
+        qualityOptions={badgeOptions.qualities.map((q) => q.name)}
+        languageOptions={badgeOptions.languages.map((l) => l.name)}
         initial={{
           title: content.title,
           slug: content.slug,

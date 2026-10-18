@@ -97,10 +97,14 @@ export async function getDistinctLanguages() {
       select: { primaryLanguage: true },
       distinct: ["primaryLanguage"],
     });
-    return rows
-      .map((r) => r.primaryLanguage!)
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
+        const names = new Set<string>();
+    for (const r of rows) {
+      for (const part of (r.primaryLanguage ?? "").split(",")) {
+        const name = part.trim();
+        if (name) names.add(name);
+      }
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
   });
 }
 
@@ -138,7 +142,20 @@ export async function browseContent(params: BrowseParams) {
   if (params.category) where.category = { slug: params.category };
   if (params.type) where.type = params.type as Prisma.EnumContentTypeFilter["equals"];
   if (params.tag) where.tags = { some: { slug: params.tag } };
-  if (params.language) where.primaryLanguage = { equals: params.language, mode: "insensitive" };
+    if (params.language) {
+    const lang = params.language;
+    where.AND = [
+      ...(Array.isArray(PUBLISHED_WHERE.AND) ? PUBLISHED_WHERE.AND : []),
+      {
+        OR: [
+          { primaryLanguage: { equals: lang, mode: "insensitive" } },
+          { primaryLanguage: { startsWith: `${lang}, `, mode: "insensitive" } },
+          { primaryLanguage: { endsWith: `, ${lang}`, mode: "insensitive" } },
+          { primaryLanguage: { contains: `, ${lang}, `, mode: "insensitive" } },
+        ],
+      },
+    ];
+  }
 
   const orderBy: Prisma.ContentOrderByWithRelationInput =
     params.sort === "popular"

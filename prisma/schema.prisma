@@ -437,6 +437,21 @@ model ContentVote {
   @@index([contentId])
 }
 
+enum BadgeKind {
+  QUALITY
+  LANGUAGE
+}
+
+model BadgeOption {
+  id        String    @id @default(cuid())
+  kind      BadgeKind
+  name      String
+  createdAt DateTime  @default(now())
+
+  @@unique([kind, name])
+  @@index([kind])
+}
+
 model Setting {
   key   String @id
   value Json

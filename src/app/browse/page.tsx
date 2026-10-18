@@ -32,6 +32,7 @@ export default async function BrowsePage({
     category: raw.category,
     type: raw.type,
     tag: raw.tag,
+    language: raw.language,
     sort: raw.sort,
     page: raw.page,
     perPage: raw.perPage,
@@ -53,6 +54,7 @@ export default async function BrowsePage({
     if (merged.category) qp.set("category", String(merged.category));
     if (merged.type) qp.set("type", String(merged.type));
     if (merged.tag) qp.set("tag", String(merged.tag));
+    if (merged.language) qp.set("language", String(merged.language));
     qp.set("sort", String(merged.sort));
     qp.set("page", String(merged.page ?? 1));
     return `/browse?${qp.toString()}`;
