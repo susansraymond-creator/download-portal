@@ -94,7 +94,8 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         <SiteHeader />
         <main className="flex-1">{children}</main>
-        {adsenseEnabled && adsensePublisherId && (
+        {adsenseEnabled && adsensePublisherId && !adsensePublisherId.includes("0000000000") && (
+
           <script
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsensePublisherId}`}

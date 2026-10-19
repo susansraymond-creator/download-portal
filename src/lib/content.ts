@@ -97,12 +97,28 @@ export async function getDistinctLanguages() {
       select: { primaryLanguage: true },
       distinct: ["primaryLanguage"],
     });
-        const names = new Set<string>();
+    const names = new Set<string>();
     for (const r of rows) {
       for (const part of (r.primaryLanguage ?? "").split(",")) {
         const name = part.trim();
         if (name) names.add(name);
       }
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  });
+}
+
+export async function getDistinctQualities() {
+  return cached("content:qualities", 3600, async () => {
+    const rows = await prisma.content.findMany({
+      where: { ...PUBLISHED_WHERE, primaryQuality: { not: null } },
+      select: { primaryQuality: true },
+      distinct: ["primaryQuality"],
+    });
+    const names = new Set<string>();
+    for (const r of rows) {
+      const name = (r.primaryQuality ?? "").trim();
+      if (name) names.add(name);
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   });
@@ -124,6 +140,7 @@ export interface BrowseParams {
   type?: string;
   tag?: string;
   language?: string;
+  quality?: string;
   sort: "newest" | "popular" | "downloads" | "title";
   page: number;
   perPage: number;
@@ -132,7 +149,7 @@ export interface BrowseParams {
 export async function browseContent(params: BrowseParams) {
   const where: Prisma.ContentWhereInput = { ...PUBLISHED_WHERE };
 
-  if (params.q) {
+if (params.q) {
     where.OR = [
       { title: { contains: params.q, mode: "insensitive" } },
       { description: { contains: params.q, mode: "insensitive" } },
@@ -142,7 +159,7 @@ export async function browseContent(params: BrowseParams) {
   if (params.category) where.category = { slug: params.category };
   if (params.type) where.type = params.type as Prisma.EnumContentTypeFilter["equals"];
   if (params.tag) where.tags = { some: { slug: params.tag } };
-    if (params.language) {
+  if (params.language) {
     const lang = params.language;
     where.AND = [
       ...(Array.isArray(PUBLISHED_WHERE.AND) ? PUBLISHED_WHERE.AND : []),
@@ -156,8 +173,11 @@ export async function browseContent(params: BrowseParams) {
       },
     ];
   }
+  if (params.quality) {
+    where.primaryQuality = { equals: params.quality, mode: "insensitive" };
+  }
 
-  const orderBy: Prisma.ContentOrderByWithRelationInput =
+const orderBy: Prisma.ContentOrderByWithRelationInput =
     params.sort === "popular"
       ? { viewCount: "desc" }
       : params.sort === "downloads"
@@ -166,7 +186,7 @@ export async function browseContent(params: BrowseParams) {
           ? { title: "asc" }
           : { publishedAt: "desc" };
 
-  const [items, total] = await Promise.all([
+const [items, total] = await Promise.all([
     prisma.content.findMany({
       where,
       select: CARD_SELECT,
@@ -177,7 +197,7 @@ export async function browseContent(params: BrowseParams) {
     prisma.content.count({ where }),
   ]);
 
-  return { items, total, pages: Math.ceil(total / params.perPage) };
+return { items, total, pages: Math.ceil(total / params.perPage) };
 }
 
 export async function getContentBySlug(slug: string) {

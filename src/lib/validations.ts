@@ -96,6 +96,7 @@ export const searchQuerySchema = z.object({
   type: z.string().optional(),
   tag: z.string().optional(),
   language: z.string().optional(),
+  quality: z.string().optional(),
   sort: z.enum(["newest", "popular", "downloads", "title"]).default("newest"),
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(60).default(30),
