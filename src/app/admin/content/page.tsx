@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ContentPinButton from "@/components/admin/content-pin-button";
+import ContentSearch from "@/components/admin/content-search";
 
 export default async function AdminContentListPage({
   searchParams,
@@ -38,25 +39,12 @@ return (
     <div>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl">Content</h1>
-        <Link href="/admin/content/new" className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-ink hover:bg-brass-bright">
-          + New content
-        </Link>
+        <Link href="/admin/content/new" className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-ink hover:bg-brass-bright">+ New content</Link>
       </div>
 
-<form action="/admin/content" method="get" className="mt-6 flex max-w-xl gap-2">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Search content by title..."
-          className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-        />
-        <button
-          type="submit"
-          className="rounded-sm border border-border px-4 py-2 text-sm text-text-muted hover:text-text"
-        >
-          Search
-        </button>
-      </form>
+<div className="mt-6 max-w-xl">
+        <ContentSearch initialQuery={q} />
+      </div>
 
 <table className="mt-4 w-full text-sm">
         <thead className="border-b border-border text-left font-mono text-xs uppercase text-text-muted">
@@ -101,9 +89,7 @@ return (
                 <ContentPinButton contentId={item.id} isFeatured={item.isFeatured} />
               </td>
               <td className="py-2.5 text-right">
-                <Link href={`/admin/content/${item.id}`} className="text-brass hover:text-brass-bright">
-                  Edit
-                </Link>
+                <Link href={`/admin/content/${item.id}`} className="text-brass hover:text-brass-bright">Edit</Link>
               </td>
             </tr>
           ))}

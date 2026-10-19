@@ -19,19 +19,8 @@ type DownloadLinkForm = {
 
 type Category = { id: string; name: string };
 
-const CONTENT_TYPES = [
-  "VIDEO",
-  "COURSE",
-  "TUTORIAL",
-  "DOCUMENT",
-  "SOFTWARE",
-  "AUDIO",
-  "IMAGE",
-  "ARCHIVE",
-];
-
 function extractSrc(value: string): string {
-  const match = value.match(/src=["']([^"']+)["']/i);
+  const match = value.match(/src=["\']([^"\']+)["\']/i);
   return match ? match[1] : value;
 }
 
@@ -99,7 +88,7 @@ export function ContentEditorForm({
   const [accessLevel, setAccessLevel] = useState(initial?.accessLevel ?? "NORMAL");
   const [imdbRating, setImdbRating] = useState(initial?.imdbRating ?? "");
   const [primaryQuality, setPrimaryQuality] = useState(initial?.primaryQuality ?? "");
-    const [languages, setLanguages] = useState<string[]>(
+  const [languages, setLanguages] = useState<string[]>(
     (initial?.primaryLanguage ?? "")
       .split(",")
       .map((s) => s.trim())
@@ -120,33 +109,30 @@ export function ContentEditorForm({
     ...languageOptions,
     ...languages.filter((l) => !languageOptions.includes(l)),
   ];
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
-  function toggleLanguage(name: string) {
-    setDirty(true);
+function toggleLanguage(name: string) {
     setLanguages((prev) =>
       prev.includes(name) ? prev.filter((l) => l !== name) : [...prev, name]
     );
   }
 
-  function updateLink(i: number, patch: Partial<DownloadLinkForm>) {
+function updateLink(i: number, patch: Partial<DownloadLinkForm>) {
     setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
-  const [dirty, setDirty] = useState(false);
 
-  function onTitleChange(v: string) {
+function onTitleChange(v: string) {
     setTitle(v);
     if (!slugTouched) setSlug(slugify(v, { lower: true, strict: true }));
   }
-
   async function onSubmit(e: React.FormEvent, saveAsStatus?: string) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const payload = {
+const payload = {
       title,
       slug,
       description,
@@ -168,13 +154,13 @@ export function ContentEditorForm({
       publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
       metaTitle: title.slice(0, 70),
       metaDescription: description.slice(0, 160),
-            watchUrl: watchUrl || undefined,
+      watchUrl: watchUrl || undefined,
       downloadLinks: links
         .filter((l) => l.providerName || l.url || l.embedUrl)
         .map((l, i) => {
           const cleanEmbed = l.embedUrl ? extractSrc(l.embedUrl) : "";
           return {
-            providerName: l.providerName || `Server ${i + 1}`,
+            providerName: l.providerName || "Server " + (i + 1),
             url: l.url || cleanEmbed,
             embedUrl: cleanEmbed || undefined,
             fileSize: l.fileSize || undefined,
@@ -188,8 +174,8 @@ export function ContentEditorForm({
         }),
     };
 
-    const res = await fetch(
-      contentId ? `/api/admin/content/${contentId}` : "/api/admin/content",
+const res = await fetch(
+      contentId ? "/api/admin/content/" + contentId : "/api/admin/content",
       {
         method: contentId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -197,42 +183,41 @@ export function ContentEditorForm({
       }
     );
 
-    setLoading(false);
+setLoading(false);
 
-    if (!res.ok) {
+if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(typeof data.error === "string" ? data.error : "Failed to save. Check required fields.");
       return;
     }
 
-    setJustSaved(true);
+setJustSaved(true);
     setTimeout(() => {
       router.push("/admin/content");
       router.refresh();
     }, 600);
   }
 
-  async function onDelete() {
+async function onDelete() {
     if (!contentId) return;
     if (!confirm("Delete this content permanently? This cannot be undone.")) return;
-    const res = await fetch(`/api/admin/content/${contentId}`, { method: "DELETE" });
+    const res = await fetch("/api/admin/content/" + contentId, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || `Failed to delete (status ${res.status}). Check console for details.`);
+      alert(data.error || "Failed to delete (status " + res.status + "). Check console for details.");
       return;
     }
     router.push("/admin/content");
     router.refresh();
   }
-
   return (
-    <form onSubmit={(e) => onSubmit(e)} onInput={() => setDirty(true)} className="space-y-8">
+    <form onSubmit={(e) => onSubmit(e)} className="space-y-8">
       {error && <p className="rounded-sm border border-danger p-3 text-sm text-danger">{error}</p>}
 
-      <section className="index-card space-y-4 p-6">
+<section className="index-card space-y-4 p-6">
         <h2 className="font-display text-lg">Basics</h2>
 
-        <Field label="Title">
+<Field label="Title">
           <input
             required
             value={title}
@@ -241,7 +226,7 @@ export function ContentEditorForm({
           />
         </Field>
 
-        <Field label="Slug">
+<Field label="Slug">
           <input
             required
             value={slug}
@@ -253,7 +238,7 @@ export function ContentEditorForm({
           />
         </Field>
 
-        <Field label="Full description">
+<Field label="Full description">
           <textarea
             required
             rows={6}
@@ -263,9 +248,7 @@ export function ContentEditorForm({
           />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          
-
+<div className="grid gap-4 sm:grid-cols-2">
           <Field label="Category">
             <select
               value={categoryId}
@@ -282,7 +265,7 @@ export function ContentEditorForm({
           </Field>
         </div>
 
-        <Field label="Poster image URL (used for card and detail page)">
+<Field label="Poster image URL (used for card and detail page)">
           <input
             value={posterUrl}
             onChange={(e) => setPosterUrl(e.target.value)}
@@ -290,17 +273,17 @@ export function ContentEditorForm({
           />
         </Field>
 
-        <label className="flex items-center gap-2 text-sm text-text-muted">
+<label className="flex items-center gap-2 text-sm text-text-muted">
           <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
           Feature on homepage
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-text-muted">
+<label className="flex items-center gap-2 text-sm text-text-muted">
           <input type="checkbox" checked={hasSeasons} onChange={(e) => setHasSeasons(e.target.checked)} />
-          This is a series (has seasons &amp; episodes)
+          This is a series (has seasons and episodes)
         </label>
 
-        <Field label="Access level">
+<Field label="Access level">
           <select
             value={accessLevel}
             onChange={(e) => setAccessLevel(e.target.value)}
@@ -311,7 +294,7 @@ export function ContentEditorForm({
           </select>
         </Field>
 
-        <Field label="IMDb rating (0–10, optional)">
+<Field label="IMDb rating (0-10, optional)">
           <input
             type="number"
             step="0.1"
@@ -323,7 +306,7 @@ export function ContentEditorForm({
           />
         </Field>
 
-        <Field label="Quality badge">
+<Field label="Quality badge">
           <select
             value={primaryQuality}
             onChange={(e) => setPrimaryQuality(e.target.value)}
@@ -338,7 +321,7 @@ export function ContentEditorForm({
           </select>
         </Field>
 
-        <Field label="Language badge (select one or more)">
+<Field label="Language badge (select one or more)">
           <div className="flex flex-wrap gap-2">
             {languageList.map((l) => {
               const on = languages.includes(l);
@@ -359,11 +342,11 @@ export function ContentEditorForm({
             })}
           </div>
           <p className="mt-1 text-xs text-text-muted">
-            Need another option? Add it from Admin → Badges.
+            Need another option? Add it from Admin, then Badges.
           </p>
         </Field>
 
-        <Field label="Update label (e.g. S01 | Ep 1-8 Added)">
+<Field label="Update label (e.g. S01 | Ep 1-8 Added)">
           <input
             value={updateLabel}
             onChange={(e) => setUpdateLabel(e.target.value)}
@@ -372,7 +355,7 @@ export function ContentEditorForm({
           />
         </Field>
 
-        {hasSeasons && (
+{hasSeasons && (
           <Field label="Series status">
             <select
               value={seriesStatus}
@@ -387,7 +370,7 @@ export function ContentEditorForm({
         )}
       </section>
 
-      <section className="index-card space-y-4 p-6">
+<section className="index-card space-y-4 p-6">
         <h2 className="font-display text-lg">Publishing</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Status">
@@ -412,91 +395,88 @@ export function ContentEditorForm({
           </Field>
         </div>
       </section>
-
       {!hasSeasons && (
-      <section className="index-card space-y-4 p-6">
-        <Field label="Watch link (optional, opens in new tab)">
-          <input
-            value={watchUrl}
-            onChange={(e) => setWatchUrl(e.target.value)}
-            placeholder="https://..."
-            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-          />
-        </Field>
+        <section className="index-card space-y-4 p-6">
+          <Field label="Watch link (optional, opens in new tab)">
+            <input
+              value={watchUrl}
+              onChange={(e) => setWatchUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+            />
+          </Field>
 
-        <div className="flex items-center justify-between pt-2">
-          <h2 className="font-display text-lg">Servers / Download links</h2>
-          <button
-            type="button"
-            onClick={() => {
-              setDirty(true);
-              setLinks((prev) => [...prev, { ...emptyLink }]);
-            }}
-            className="rounded-sm border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text"
-          >
-            + Add server
-          </button>
-        </div>
+<div className="flex items-center justify-between pt-2">
+            <h2 className="font-display text-lg">Servers / Download links</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setLinks((prev) => [...prev, { ...emptyLink }]);
+              }}
+              className="rounded-sm border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text"
+            >
+                           + Add server
+            </button>
+          </div>
 
-        <div className="space-y-4">
-          {links.map((link, i) => (
-            <div key={i} className="grid gap-3 rounded-sm border border-border p-4 sm:grid-cols-2">
-              <Field label="Server name (e.g. Server 1)">
-                <input
-                  value={link.providerName}
-                  onChange={(e) => updateLink(i, { providerName: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Download URL">
-                <input
-                  value={link.url}
-                  onChange={(e) => updateLink(i, { url: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Embed player URL (optional — enables in-page player)">
-                <input
-                  value={link.embedUrl}
-                  onChange={(e) => updateLink(i, { embedUrl: e.target.value })}
-                  placeholder="https://.../player.php?v=..."
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Quality">
-                <input
-                  value={link.quality}
-                  onChange={(e) => updateLink(i, { quality: e.target.value })}
-                  className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
-                />
-              </Field>
-              <button
-                type="button"
-                onClick={() => {
-                  setDirty(true);
-                  setLinks((prev) => prev.filter((_, idx) => idx !== i));
-                }}
-                className="col-span-2 text-left text-xs text-danger hover:underline"
-              >
-                Remove server
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+<div className="space-y-4">
+            {links.map((link, i) => (
+              <div key={i} className="grid gap-3 rounded-sm border border-border p-4 sm:grid-cols-2">
+                <Field label="Server name (e.g. Server 1)">
+                  <input
+                    value={link.providerName}
+                    onChange={(e) => updateLink(i, { providerName: e.target.value })}
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Download URL">
+                  <input
+                    value={link.url}
+                    onChange={(e) => updateLink(i, { url: e.target.value })}
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Embed player URL (optional - enables in-page player)">
+                  <input
+                    value={link.embedUrl}
+                    onChange={(e) => updateLink(i, { embedUrl: e.target.value })}
+                    placeholder="https://.../player.php?v=..."
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Quality">
+                  <input
+                    value={link.quality}
+                    onChange={(e) => updateLink(i, { quality: e.target.value })}
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </Field>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLinks((prev) => prev.filter((_, idx) => idx !== i));
+                  }}
+                  className="col-span-2 text-left text-xs text-danger hover:underline"
+                >
+                  Remove server
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
-      {hasSeasons && contentId && (
+{hasSeasons && contentId && (
         <p className="rounded-sm border border-teal/40 bg-teal/5 p-4 text-sm text-text-muted">
-          This content uses Seasons &amp; Episodes for downloads. Manage them from the{" "}
-          <a href={`/admin/content/${contentId}/seasons`} className="text-teal hover:underline">
-            Seasons &amp; Episodes
+          This content uses Seasons and Episodes for downloads. Manage them from the{" "}
+          <a href={"/admin/content/" + contentId + "/seasons"} className="text-teal hover:underline">
+            Seasons and Episodes
           </a>{" "}
           page.
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
+<div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={loading}
@@ -504,7 +484,7 @@ export function ContentEditorForm({
             justSaved ? "bg-teal" : "bg-brass hover:bg-brass-bright"
           }`}
         >
-          {loading ? "Saving…" : justSaved ? "Saved ✓" : "Save"}
+          {loading ? "Saving..." : justSaved ? "Saved" : "Save"}
         </button>
         <button
           type="button"
@@ -532,29 +512,6 @@ export function ContentEditorForm({
           </button>
         )}
       </div>
-      {contentId && dirty && !justSaved && (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-brass bg-ink/95 px-4 py-3 backdrop-blur">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-            <p className="text-sm text-brass">You have unsaved changes.</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="rounded-sm border border-border px-4 py-1.5 text-sm text-text-muted hover:text-text"
-              >
-                Discard
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="rounded-sm bg-brass px-4 py-1.5 text-sm font-medium text-ink hover:bg-brass-bright disabled:opacity-60"
-              >
-                {loading ? "Updating..." : "Update"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </form>
   );
 }

@@ -456,3 +456,23 @@ model Setting {
   key   String @id
   value Json
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// CONTENT CHANGE APPROVALS
+// ─────────────────────────────────────────────────────────────────────────
+
+model ContentChange {
+  id            String   @id @default(cuid())
+  contentId     String
+  title         String
+  data          Json
+  status        String   @default("PENDING") // PENDING | ACCEPTED | DECLINED
+  requestedBy   String?
+  requestedByName String?
+  createdAt     DateTime @default(now())
+  resolvedAt    DateTime?
+  resolvedBy    String?
+
+@@index([status, createdAt])
+  @@index([contentId])
+}

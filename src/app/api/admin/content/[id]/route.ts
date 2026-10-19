@@ -3,9 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/api-guard";
 import { contentSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
-import { invalidateCache } from "@/lib/redis";
 import { getClientIp } from "@/lib/rate-limit";
-import { notifyNewContent } from "@/lib/notifications";
 
 export async function GET(
   _req: NextRequest,
@@ -49,80 +47,30 @@ export async function PATCH(
   // Download links: full replace-on-edit keeps this endpoint simple and
   // avoids partial-update ordering bugs. For high-churn catalogs this could
   // be swapped for per-link PATCH endpoints (already scaffolded pattern).
-  const updated = await prisma.$transaction(async (tx) => {
-    if (data.downloadLinks) {
-      await tx.downloadLink.deleteMany({ where: { contentId: id } });
-    }
-
-    return tx.content.update({
-      where: { id },
-      data: {
-        ...(data.title !== undefined && { title: data.title }),
-        ...(data.slug !== undefined && { slug: data.slug }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.shortDescription !== undefined && { shortDescription: data.shortDescription }),
-        ...(data.type !== undefined && { type: data.type }),
-        ...(data.status !== undefined && {
-          status: data.status,
-          publishedAt:
-            data.status === "PUBLISHED" && existing.status !== "PUBLISHED"
-              ? new Date()
-              : existing.publishedAt,
-        }),
-        ...(data.posterUrl !== undefined && { posterUrl: data.posterUrl }),
-        ...(data.thumbnailUrl !== undefined && { thumbnailUrl: data.thumbnailUrl }),
-        ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
-        ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
-        ...(data.hasSeasons !== undefined && { hasSeasons: data.hasSeasons }),
-        ...(data.accessLevel !== undefined && { accessLevel: data.accessLevel }),
-        ...(data.imdbRating !== undefined && { imdbRating: data.imdbRating }),
-        ...(data.primaryQuality !== undefined && { primaryQuality: data.primaryQuality }),
-        ...(data.primaryLanguage !== undefined && { primaryLanguage: data.primaryLanguage }),
-        ...(data.updateLabel !== undefined && { updateLabel: data.updateLabel }),
-        ...(data.seriesStatus !== undefined && { seriesStatus: data.seriesStatus }),
-        ...(data.watchUrl !== undefined && { watchUrl: data.watchUrl }),
-        ...(data.publishAt !== undefined && {
-          publishAt: data.publishAt ? new Date(data.publishAt) : null,
-        }),
-        ...(data.metaTitle !== undefined && { metaTitle: data.metaTitle }),
-        ...(data.metaDescription !== undefined && { metaDescription: data.metaDescription }),
-        ...(data.canonicalUrl !== undefined && { canonicalUrl: data.canonicalUrl }),
-        ...(data.tagIds !== undefined && { tags: { set: data.tagIds.map((tid) => ({ id: tid })) } }),
-        ...(data.downloadLinks !== undefined && {
-          downloadLinks: {
-                        create: data.downloadLinks.map((l, i) => ({
-              providerName: l.providerName,
-              url: l.url || l.embedUrl || "#",
-              embedUrl: l.embedUrl,
-              fileSize: l.fileSize,
-              version: l.version,
-              quality: l.quality,
-              language: l.language,
-              notes: l.notes,
-              status: l.status,
-              sortOrder: l.sortOrder ?? i,
-            })),
-          },
-        }),
-      },
-    });
+  await prisma.contentChange.create({
+    data: {
+      contentId: id,
+      title: data.title ?? existing.title,
+      data: parsed.data as object,
+      requestedBy: session!.user.id,
+      requestedByName: session!.user.name ?? session!.user.email ?? "Unknown",
+    },
   });
 
   await logAudit({
     userId: session!.user.id,
-    action: "CONTENT_UPDATED",
+    action: "CONTENT_CHANGE_REQUESTED",
     entity: "Content",
     entityId: id,
     ipAddress: getClientIp(req.headers),
   });
 
-  await invalidateCache("content:*");
+return NextResponse.json({
+    ok: true,
+    pending: true,
+    message: "Saved as a pending change. Accept it on the Updates page to publish.",
+  });
 
-  if (data.status === "PUBLISHED" && existing.status !== "PUBLISHED") {
-    await notifyNewContent(updated).catch(() => {});
-  }
-
-  return NextResponse.json({ ok: true, content: updated });
 }
 
 export async function DELETE(
@@ -144,7 +92,6 @@ export async function DELETE(
     ipAddress: getClientIp(req.headers),
   });
 
-  await invalidateCache("content:*");
-
   return NextResponse.json({ ok: true });
 }
+
