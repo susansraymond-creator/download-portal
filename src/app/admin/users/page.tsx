@@ -17,7 +17,7 @@ export default async function AdminUsersPage() {
           Manage Admins →
         </a>
       </div>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">`n      <table className="w-full min-w-[560px] text-sm">
         <thead className="border-b border-border text-left font-mono text-xs uppercase text-text-muted">
           <tr>
             <th className="py-2">Name</th>
@@ -32,7 +32,8 @@ export default async function AdminUsersPage() {
             <UserRow key={u.id} user={u} roleOptions={["USER", "PREMIUM"]} />
           ))}
         </tbody>
-      </table>
+      </table>`n      </div>
     </div>
   );
 }
+

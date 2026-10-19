@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -46,55 +46,57 @@ return (
         <ContentSearch initialQuery={q} />
       </div>
 
-<table className="mt-4 w-full text-sm">
-        <thead className="border-b border-border text-left font-mono text-xs uppercase text-text-muted">
-          <tr>
-            <th className="py-2">Title</th>
-            <th className="py-2">Status</th>
-            <th className="py-2">Links</th>
-            <th className="py-2">Updated</th>
-            <th className="py-2">Pin</th>
-            <th className="py-2" />
-          </tr>
-        </thead>
-        <tbody>
-          {items.length === 0 && (
+<div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead className="border-b border-border text-left font-mono text-xs uppercase text-text-muted">
             <tr>
-              <td colSpan={6} className="py-6 text-text-muted">
-                {q ? `No results for "${q}".` : "No content yet."}
-              </td>
+              <th className="py-2">Title</th>
+              <th className="py-2">Status</th>
+              <th className="py-2">Links</th>
+              <th className="py-2">Updated</th>
+              <th className="py-2">Pin</th>
+              <th className="py-2" />
             </tr>
-          )}
-          {items.map((item) => (
-            <tr key={item.id} className="border-b border-border/50">
-              <td className="py-2.5">{item.title}</td>
-              <td className="py-2.5">
-                <span
-                  className={`stamp ${
-                    item.status === "PUBLISHED"
-                      ? "text-teal"
-                      : item.status === "DRAFT"
-                        ? "text-text-muted"
-                        : "text-brass"
-                  }`}
-                >
-                  {item.status}
-                </span>
-              </td>
-              <td className="py-2.5 text-text-muted">{item.downloadLinks.length}</td>
-              <td className="py-2.5 font-mono text-xs text-text-muted">
-                {item.updatedAt.toLocaleDateString()}
-              </td>
-              <td className="py-2.5">
-                <ContentPinButton contentId={item.id} isFeatured={item.isFeatured} />
-              </td>
-              <td className="py-2.5 text-right">
-                <Link href={`/admin/content/${item.id}`} className="text-brass hover:text-brass-bright">Edit</Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-6 text-text-muted">
+                  {q ? `No results for "${q}".` : "No content yet."}
+                </td>
+              </tr>
+            )}
+            {items.map((item) => (
+              <tr key={item.id} className="border-b border-border/50">
+                <td className="py-2.5">{item.title}</td>
+                <td className="py-2.5">
+                  <span
+                    className={`stamp ${
+                      item.status === "PUBLISHED"
+                        ? "text-teal"
+                        : item.status === "DRAFT"
+                          ? "text-text-muted"
+                          : "text-brass"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </td>
+                <td className="py-2.5 text-text-muted">{item.downloadLinks.length}</td>
+                <td className="py-2.5 font-mono text-xs text-text-muted">
+                  {item.updatedAt.toLocaleDateString()}
+                </td>
+                <td className="py-2.5">
+                  <ContentPinButton contentId={item.id} isFeatured={item.isFeatured} />
+                </td>
+                <td className="py-2.5 text-right">
+                  <Link href={`/admin/content/${item.id}`} className="text-brass hover:text-brass-bright">Edit</Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
 {pages > 1 && (
         <div className="mt-6 flex gap-2 font-mono text-xs">

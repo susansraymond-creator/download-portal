@@ -23,7 +23,7 @@ export default async function AdminAuditLogPage() {
         Most recent 100 admin actions. Every content, user, and settings change is recorded here.
       </p>
 
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">`n      <table className="w-full min-w-[640px] text-sm">
         <thead className="border-b border-border text-left font-mono text-xs uppercase text-text-muted">
           <tr>
             <th className="py-2">When</th>
@@ -53,7 +53,7 @@ export default async function AdminAuditLogPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table>`n      </div>
 
       {logs.length === 0 && (
         <p className="mt-8 text-center text-text-muted">No admin actions recorded yet.</p>

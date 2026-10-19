@@ -52,6 +52,7 @@ model User {
   notifications     Notification[]
   reports           Report[]
   auditLogs         AuditLog[]
+  watchEvents       WatchEvent[]
   passwordResetToken PasswordResetToken[]
   content           Content[]            @relation("ContentAuthor")
   permissions       AdminPermission[]
@@ -220,6 +221,7 @@ model Content {
   relatedTo   Content[] @relation("RelatedContent")
   relatedFrom Content[] @relation("RelatedContent")
   votes       ContentVote[]
+  watchEvents WatchEvent[]
 
   @@index([slug])
   @@index([status, publishAt])
@@ -476,3 +478,17 @@ model ContentChange {
 @@index([status, createdAt])
   @@index([contentId])
 }
+// WATCH HISTORY
+model WatchEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  watchedAt DateTime @default(now()) @updatedAt
+
+@@unique([userId, contentId])
+  @@index([userId, watchedAt])
+}
+
+

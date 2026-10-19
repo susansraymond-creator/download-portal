@@ -32,27 +32,48 @@ const pendingCount = await prisma.contentChange.count({
   });
 
 return (
-    <div className="mx-auto flex max-w-7xl gap-8 px-4 py-10 sm:px-6">
-      <aside className="w-48 shrink-0">
-        <p className="stamp mb-4 text-teal">Admin</p>
-        <nav className="space-y-1 text-sm">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded-sm px-2 py-1.5 text-text-muted hover:bg-surface hover:text-text"
-            >
-              {item.label}
-              {item.href === "/admin/updates" && pendingCount > 0 && (
-                <span className="ml-2 rounded-full bg-red-600 px-1.5 py-0.5 font-mono text-xs text-white">
-                  {pendingCount}
-                </span>
-              )}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-      <div className="flex-1 min-w-0">{children}</div>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      {/* Mobile nav: horizontal scrollable pills */}
+      <nav className="mb-6 flex gap-2 overflow-x-auto pb-2 lg:hidden">
+        {NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="shrink-0 whitespace-nowrap rounded-sm border border-border px-3 py-1.5 text-sm text-text-muted hover:text-text"
+          >
+            {item.label}
+            {item.href === "/admin/updates" && pendingCount > 0 && (
+              <span className="ml-2 rounded-full bg-red-600 px-1.5 py-0.5 font-mono text-xs text-white">
+                {pendingCount}
+              </span>
+            )}
+          </Link>
+        ))}
+      </nav>
+
+<div className="flex gap-8">
+        {/* Desktop sidebar */}
+        <aside className="hidden w-48 shrink-0 lg:block">
+          <p className="stamp mb-4 text-teal">Admin</p>
+          <nav className="space-y-1 text-sm">
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block rounded-sm px-2 py-1.5 text-text-muted hover:bg-surface hover:text-text"
+              >
+                {item.label}
+                {item.href === "/admin/updates" && pendingCount > 0 && (
+                  <span className="ml-2 rounded-full bg-red-600 px-1.5 py-0.5 font-mono text-xs text-white">
+                    {pendingCount}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </nav>
+        </aside>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </div>
   );
 }

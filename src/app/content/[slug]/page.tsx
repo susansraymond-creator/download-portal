@@ -108,6 +108,18 @@ export default async function ContentDetailPage({
     .update({ where: { id: content.id }, data: { viewCount: { increment: 1 } } })
     .catch(() => {});
 
+  if (session?.user?.id) {
+    prisma.watchEvent
+      .upsert({
+        where: {
+          userId_contentId: { userId: session.user.id, contentId: content.id },
+        },
+        create: { userId: session.user.id, contentId: content.id },
+        update: { watchedAt: new Date() },
+      })
+      .catch(() => {});
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
