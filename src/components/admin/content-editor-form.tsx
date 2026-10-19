@@ -122,6 +122,7 @@ export function ContentEditorForm({
   ];
 
   function toggleLanguage(name: string) {
+    setDirty(true);
     setLanguages((prev) =>
       prev.includes(name) ? prev.filter((l) => l !== name) : [...prev, name]
     );
@@ -133,6 +134,7 @@ export function ContentEditorForm({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   function onTitleChange(v: string) {
     setTitle(v);
@@ -224,7 +226,7 @@ export function ContentEditorForm({
   }
 
   return (
-    <form onSubmit={(e) => onSubmit(e)} className="space-y-8">
+    <form onSubmit={(e) => onSubmit(e)} onInput={() => setDirty(true)} className="space-y-8">
       {error && <p className="rounded-sm border border-danger p-3 text-sm text-danger">{error}</p>}
 
       <section className="index-card space-y-4 p-6">
@@ -426,7 +428,10 @@ export function ContentEditorForm({
           <h2 className="font-display text-lg">Servers / Download links</h2>
           <button
             type="button"
-            onClick={() => setLinks((prev) => [...prev, { ...emptyLink }])}
+            onClick={() => {
+              setDirty(true);
+              setLinks((prev) => [...prev, { ...emptyLink }]);
+            }}
             className="rounded-sm border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text"
           >
             + Add server
@@ -467,7 +472,10 @@ export function ContentEditorForm({
               </Field>
               <button
                 type="button"
-                onClick={() => setLinks((prev) => prev.filter((_, idx) => idx !== i))}
+                onClick={() => {
+                  setDirty(true);
+                  setLinks((prev) => prev.filter((_, idx) => idx !== i));
+                }}
                 className="col-span-2 text-left text-xs text-danger hover:underline"
               >
                 Remove server
@@ -524,6 +532,29 @@ export function ContentEditorForm({
           </button>
         )}
       </div>
+      {contentId && dirty && !justSaved && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-brass bg-ink/95 px-4 py-3 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+            <p className="text-sm text-brass">You have unsaved changes.</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="rounded-sm border border-border px-4 py-1.5 text-sm text-text-muted hover:text-text"
+              >
+                Discard
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-sm bg-brass px-4 py-1.5 text-sm font-medium text-ink hover:bg-brass-bright disabled:opacity-60"
+              >
+                {loading ? "Updating..." : "Update"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
