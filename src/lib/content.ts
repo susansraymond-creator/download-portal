@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { cached } from "@/lib/redis";
 import type { Prisma } from "@prisma/client";
 
@@ -59,7 +59,7 @@ export async function getPopularContent(limit = 12) {
     prisma.content.findMany({
       where: PUBLISHED_WHERE,
       select: CARD_SELECT,
-      orderBy: { downloadCount: "desc" },
+      orderBy: [{ viewCount: "desc" }, { downloadCount: "desc" }, { publishedAt: "desc" }],
       take: limit,
     })
   );
@@ -242,3 +242,4 @@ export async function getRelatedContent(contentId: string, categoryId: string | 
     take: limit,
   });
 }
+
