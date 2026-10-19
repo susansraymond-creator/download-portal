@@ -10,10 +10,24 @@ import {
 } from "@/lib/content";
 import { searchQuerySchema } from "@/lib/validations";
 
-export const metadata: Metadata = {
-  title: "Browse the catalog",
-  description: "Search and filter the full content catalog.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const raw = await searchParams;
+  const category = typeof raw.category === "string" ? raw.category : undefined;
+  const canonical = category
+    ? `/browse?category=${encodeURIComponent(category)}`
+    : "/browse";
+
+  return {
+    title: "Browse the catalog",
+    description: "Search and filter the full content catalog.",
+    alternates: { canonical },
+    robots: { index: false, follow: true },
+  };
+}
 
 export default async function BrowsePage({
   searchParams,
@@ -33,18 +47,18 @@ export default async function BrowsePage({
     perPage: raw.perPage,
   });
 
-const params = parsed.success
+  const params = parsed.success
     ? parsed.data
     : { sort: "newest" as const, page: 1, perPage: 24 };
 
-const [{ items, total, pages }, categories, languages, qualities] = await Promise.all([
+  const [{ items, total, pages }, categories, languages, qualities] = await Promise.all([
     browseContent(params),
     getCategories(),
     getDistinctLanguages(),
     getDistinctQualities(),
   ]);
 
-function buildHref(overrides: Record<string, string | number | undefined>) {
+  function buildHref(overrides: Record<string, string | number | undefined>) {
     const qp = new URLSearchParams();
     const merged = { ...params, ...overrides };
     if (merged.q) qp.set("q", String(merged.q));
@@ -58,19 +72,19 @@ function buildHref(overrides: Record<string, string | number | undefined>) {
     return `/browse?${qp.toString()}`;
   }
 
-return (
+  return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <h1 className="font-display text-3xl">Browse</h1>
       <p className="mt-1 text-sm text-text-muted">
         {total.toLocaleString()} item{total === 1 ? "" : "s"} in the catalog
       </p>
 
-<div className="mt-6 mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-sm flex-1">
           <SearchBar initialValue={params.q} />
         </div>
 
-<div className="flex flex-wrap gap-2 font-mono text-xs">
+        <div className="flex flex-wrap gap-2 font-mono text-xs">
           {(["newest", "popular", "downloads", "title"] as const).map((s) => (
             <Link
               key={s}
@@ -87,7 +101,7 @@ return (
         </div>
       </div>
 
-<div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
         <aside className="space-y-6">
           <div>
             <p className="mb-2 font-mono text-xs uppercase tracking-wide text-text-muted">
@@ -119,7 +133,7 @@ return (
             </ul>
           </div>
 
-{languages.length > 0 && (
+          {languages.length > 0 && (
             <div>
               <p className="mb-2 font-mono text-xs uppercase tracking-wide text-text-muted">
                 Language
@@ -151,7 +165,7 @@ return (
             </div>
           )}
 
-{qualities.length > 0 && (
+          {qualities.length > 0 && (
             <div>
               <p className="mb-2 font-mono text-xs uppercase tracking-wide text-text-muted">
                 Quality
@@ -184,7 +198,7 @@ return (
           )}
         </aside>
 
-<div>
+        <div>
           {items.length === 0 ? (
             <p className="rounded-sm border border-dashed border-border p-12 text-center text-text-muted">
               Nothing matches those filters yet.
@@ -197,7 +211,7 @@ return (
             </div>
           )}
 
-{pages > 1 && (
+          {pages > 1 && (
             <div className="mt-10 flex justify-center gap-2 font-mono text-xs">
               {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
                 <Link
