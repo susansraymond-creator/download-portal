@@ -6,6 +6,7 @@ import { Pagination } from "@/components/pagination";
 import { FilterGrid } from "@/components/filter-grid";
 import {
   getFeaturedContent,
+  getPopularContent,
   getHomeFeedPage,
   getCategories,
   getDistinctLanguages,
@@ -24,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
     "A curated download catalog for personally owned and licensed digital content. Browse by category, see what's new, and find what's popular.";
 
 return {
-    title: `${siteName} — A personal, well-kept archive`,
+    title: `${siteName}`,
     description: siteDescription,
     alternates: { canonical: "/" },
   };
@@ -38,11 +39,12 @@ export default async function HomePage({
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
 
-const [{ items: feed, pages: totalPages }, categories, languages, featured] = await Promise.all([
+const [{ items: feed, pages: totalPages }, categories, languages, featured, popular] = await Promise.all([
     getHomeFeedPage(page, 30),
     getCategories(),
     getDistinctLanguages(),
     getFeaturedContent(5),
+    getPopularContent(10),
   ]);
 
 return (
@@ -58,7 +60,7 @@ return (
                 href={`/browse?category=${c.slug}`}
                 className="shrink-0 rounded-sm border border-border px-3 py-1.5 font-mono text-xs uppercase tracking-wide text-text-muted hover:border-brass hover:text-brass whitespace-nowrap"
               >
-                {c.name} · {c._count.content}
+                {c.name}&bull;{c._count.content}
               </Link>
             ))}
           </div>
@@ -79,7 +81,21 @@ return (
         </section>
       )}
 
-{feed.length > 0 && (
+{popular.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6">
+          <h2 className="mb-6 font-display text-2xl font-bold uppercase tracking-wide text-brass">
+            Trending now
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {popular
+              .filter((item) => !featured.some((f) => f.id === item.id))
+              .map((item) => (
+                <ContentCard key={item.id} content={item} />
+              ))}
+          </div>
+        </section>
+      )}
+      {feed.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="mb-6 text-center">
             <h2 className="font-display text-3xl font-bold uppercase tracking-wide text-teal">
@@ -119,3 +135,4 @@ return (
     </div>
   );
 }
+

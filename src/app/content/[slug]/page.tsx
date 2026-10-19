@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -231,7 +231,7 @@ export default async function ContentDetailPage({
             {content.imdbRating != null && (
               <div className="flex gap-2">
                 <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">IMDb</span>
-                <span className="text-brass">â˜… {content.imdbRating.toFixed(1)}/10</span>
+                <span className="text-brass">★ {content.imdbRating.toFixed(1)}/10</span>
               </div>
             )}
             {content.category && (
@@ -293,7 +293,7 @@ export default async function ContentDetailPage({
                     rel="noopener noreferrer nofollow"
                     className="inline-flex items-center gap-1 text-sm text-teal hover:underline"
                   >
-                    â–¶ Watch Online
+                    ▶ Watch Online
                   </a>
                 )}
                                 <DownloadLinksList
