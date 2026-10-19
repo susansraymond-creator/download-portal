@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -16,6 +16,9 @@ import { canAccessContent } from "@/lib/permissions";
 
 export const revalidate = 60;
 export const dynamic = 'force-dynamic';
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://koreandramalink.vercel.app';
 
 async function loadContent(slug: string) {
   const content = await getContentBySlug(slug);
@@ -128,22 +131,22 @@ export default async function ContentDetailPage({
     image: content.posterUrl || content.thumbnailUrl || undefined,
     dateModified: content.updatedAt.toISOString(),
     datePublished: (content.publishedAt ?? content.createdAt).toISOString(),
-    genre: content.category?.name,
+    genre: content.tags.length > 0 ? content.tags.map((t) => t.name).join(", ") : content.category?.name,
   };
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "/" },
-      { "@type": "ListItem", position: 2, name: "Browse", item: "/browse" },
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "Browse", item: `${SITE_URL}/browse` },
       ...(content.category
         ? [
             {
               "@type": "ListItem",
               position: 3,
               name: content.category.name,
-              item: `/browse?category=${content.category.slug}`,
+              item: `${SITE_URL}/browse?category=${content.category.slug}`,
             },
           ]
         : []),
@@ -151,7 +154,7 @@ export default async function ContentDetailPage({
         "@type": "ListItem",
         position: content.category ? 4 : 3,
         name: content.title,
-        item: `/content/${content.slug}`,
+        item: `${SITE_URL}/content/${content.slug}`,
       },
     ],
   };
@@ -228,7 +231,7 @@ export default async function ContentDetailPage({
             {content.imdbRating != null && (
               <div className="flex gap-2">
                 <span className="w-24 shrink-0 font-mono text-xs uppercase text-text-muted">IMDb</span>
-                <span className="text-brass">★ {content.imdbRating.toFixed(1)}/10</span>
+                <span className="text-brass">â˜… {content.imdbRating.toFixed(1)}/10</span>
               </div>
             )}
             {content.category && (
@@ -290,7 +293,7 @@ export default async function ContentDetailPage({
                     rel="noopener noreferrer nofollow"
                     className="inline-flex items-center gap-1 text-sm text-teal hover:underline"
                   >
-                    ▶ Watch Online
+                    â–¶ Watch Online
                   </a>
                 )}
                                 <DownloadLinksList
@@ -318,3 +321,4 @@ export default async function ContentDetailPage({
     </div>
   );
 }
+
