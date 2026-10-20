@@ -20,28 +20,49 @@ function isStandalone() {
   );
 }
 
+function isIosDevice() {
+  // iOS 13+ reports itself as "Macintosh" on iPad, so also check for
+  // multi-touch Macs — otherwise iPads would get the Android flow.
+  const ua = window.navigator.userAgent;
+  return (
+    /iphone|ipod/i.test(ua) ||
+    (/ipad/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua)))
+  );
+}
+
+type HelpKind = "ios" | "firefox" | "desktop-chrome-menu";
+
 /**
  * Compact bottom pill that invites visitors to install the PWA.
  *
  * Behavior:
- * - Shows on the HOMEPAGE — on first load, on every refresh, and again
- *   every time the visitor returns to the homepage (e.g. after viewing a
- *   content page) — as long as the app is not installed.
- * - Cancel (✕) only hides it for the current view; it does NOT persist.
- *   Coming back to the homepage shows it again.
- * - Once installed (standalone launch, appinstalled event, or the stored
- *   flag) it never shows again on mobile or PC.
- * - Tapping Install triggers the browser install dialog directly.
- * - On iOS (no native install prompt), tapping Install reveals the
+ * - Shows on the HOMEPAGE — first load, every refresh, and again each
+ *   time the visitor returns to the homepage — as long as the app is not
+ *   installed. Cancel (x) only hides it temporarily.
+ * - Once installed (standalone launch, appinstalled event, or accepted
+ *   install choice) it never shows again on mobile or PC.
+ * - Tapping Install triggers the native browser install dialog directly.
+ * - On iOS/iPadOS there is no native dialog; the Install tap reveals the
  *   "Share -> Add to Home Screen" steps inline.
+ * - If the browser never fired beforeinstallprompt (e.g. Safari desktop,
+ *   Firefox), the Install tap shows how to install in that browser.
  */
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
-  const [showIosSteps, setShowIosSteps] = useState(false);
+  const [help, setHelp] = useState<HelpKind | null>(null);
   const pathname = usePathname();
   const [isIos, setIsIos] = useState(false);
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    // Register the service worker. Chrome requires an active service
+    // worker before it fires beforeinstallprompt, which makes the
+    // install button work. Safe no-op on browsers without support.
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     // The pill lives on the homepage only.
@@ -53,7 +74,7 @@ export function InstallPrompt() {
     // Installed (or launched as an installed app) — never show again.
     if (localStorage.getItem(INSTALLED_KEY) === "1" || isStandalone()) return;
 
-    const iosDevice = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    const iosDevice = isIosDevice();
     setIsIos(iosDevice);
 
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -63,6 +84,7 @@ export function InstallPrompt() {
       promptRef.current = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptRef.current);
       setVisible(true);
+      setHelp(null);
     }
 
     if (iosDevice) {
@@ -76,6 +98,7 @@ export function InstallPrompt() {
       if (promptRef.current) {
         setDeferredPrompt(promptRef.current);
         setVisible(true);
+        setHelp(null);
       } else {
         window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       }
@@ -97,29 +120,51 @@ export function InstallPrompt() {
   }, [pathname]);
 
   async function install() {
+    // iOS/iPadOS: no native install dialog — show the A2HS steps.
     if (isIos) {
-      setShowIosSteps((v) => !v);
+      setHelp("ios");
       return;
     }
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      localStorage.setItem(INSTALLED_KEY, "1");
-      setVisible(false);
-      setDeferredPrompt(null);
-      promptRef.current = null;
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        localStorage.setItem(INSTALLED_KEY, "1");
+        setVisible(false);
+        setDeferredPrompt(null);
+        promptRef.current = null;
+      }
+      return;
     }
+    // No native prompt available (Safari/Firefox desktop, or the browser
+    // has not fired the event yet) — guide the visitor manually.
+    const ua = navigator.userAgent.toLowerCase();
+    setHelp(ua.includes("firefox") ? "firefox" : "desktop-chrome-menu");
   }
 
-  // Cancel only hides for now — the pill returns the next time the
-  // visitor lands on the homepage or refreshes, until they install.
   function dismiss() {
     setVisible(false);
-    setShowIosSteps(false);
+    setHelp(null);
   }
 
   if (!visible) return null;
+
+  const helpContent: Record<HelpKind, { title: string; body: string }> = {
+    ios: {
+      title: "iOS এ install করুন",
+      body: "Safari-র নিচের <span class='text-brass'>Share (⬆)</span> বাটনে ট্যাপ করুন → <span class='text-brass'>Add to Home Screen</span> → <span class='text-brass'>Add</span>।",
+    },
+    firefox: {
+      title: "Firefox-এ install করুন",
+      body: "Address bar-এর ডানে <span class='text-brass'>Install</span> আইকনে ক্লিক করুন, না থাকলে Firefox মেনু (☰) → <span class='text-brass'>Install This Site as an App</span>।",
+    },
+    "desktop-chrome-menu": {
+      title: "App হিসেবে install করুন",
+      body: "Address bar-এর ডান পাশে <span class='text-brass'>Install</span> আইকন (⊕) দেখুন, বা Chrome মেনু (⋮) → <span class='text-brass'>Install koreandramalink</span>।",
+    },
+  };
+
+  const steps = help ? helpContent[help] : null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3">
@@ -151,11 +196,16 @@ export function InstallPrompt() {
           </button>
         </div>
 
-        {isIos && showIosSteps && (
-          <p className="mt-2 rounded-xl border border-border bg-ink/50 px-3 py-2 text-xs leading-relaxed text-text-muted">
-            Safari-র নিচে <span className="text-brass">Share (⬆)</span> → <span className="text-brass">Add to Home Screen</span> →{" "}
-            <span className="text-brass">Add</span> চাপুন।
-          </p>
+        {steps && (
+          <div className="mt-2 rounded-xl border border-border bg-ink/50 px-3 py-2">
+            <p className="mb-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-text-muted">
+              {steps.title}
+            </p>
+            <p
+              className="text-xs leading-relaxed text-text-muted"
+              dangerouslySetInnerHTML={{ __html: steps.body }}
+            />
+          </div>
         )}
       </div>
     </div>
