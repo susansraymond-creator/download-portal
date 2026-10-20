@@ -10,6 +10,7 @@ import { SeasonEpisodeList } from "@/components/season-episode-list";
 import { SmartPlayer } from "@/components/smart-player";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ReportButton } from "@/components/report-button";
+import { ShareButton } from "@/components/share-button";
 import { VoteWidget } from "@/components/vote-widget";
 import { auth } from "@/lib/auth";
 import { canAccessContent } from "@/lib/permissions";
@@ -201,6 +202,7 @@ export default async function ContentDetailPage({
           <div className="mt-4 flex gap-2">
             <FavoriteButton contentId={content.id} isLoggedIn={!!session?.user} />
             <ReportButton contentId={content.id} isLoggedIn={!!session?.user} />
+            <ShareButton title={content.title} slug={content.slug} />
           </div>
         </div>
 
@@ -321,4 +323,3 @@ export default async function ContentDetailPage({
     </div>
   );
 }
-
