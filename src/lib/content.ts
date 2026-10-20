@@ -57,8 +57,9 @@ export async function getRecentContent(limit = 12) {
 }
 
 export async function getPopularContent(limit = 12) {
-  // Exclude featured content (already shown in the pinned section) and keep
-  // a stable tie-breaker ranking; cache refreshes every minute.
+  // Exclude featured (pinned) content and keep a stable tie-breaker ranking.
+  // The query fetches extra rows so the homepage can also drop any featured
+  // overlap defensively and still fill the trending grid.
   return cached(`content:popular:${limit}`, 60, () =>
     prisma.content.findMany({
       where: { ...PUBLISHED_WHERE, isFeatured: false },
