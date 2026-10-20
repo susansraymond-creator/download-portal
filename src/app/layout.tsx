@@ -61,17 +61,12 @@ export async function generateMetadata(): Promise<Metadata> {
       google: siteVerification,
     },
     manifest: "/manifest.json",
-    // Explicit icons: when `icons` is set in metadata, Next.js ignores the
-    // app/icon.tsx file convention, so the generated "K" icon must be
-    // listed here explicitly or the browser falls back to favicon.ico
-    // (the old generic icon) and the "K" disappears.
+    // The "K" favicon (app/icon.tsx route) is the ONLY favicon. Listing a
+    // second icon here lets browsers pick the larger favicon.ico instead
+    // and the K disappears. The ?v= query busts the aggressive favicon
+    // cache so old icons are not served after deploys.
     icons: {
-      icon: [
-        // Generated K favicon (app/icon.tsx route)
-        { url: "/icon", type: "image/png", sizes: "32x32" },
-        // Legacy multi-size fallback for older browsers / bookmarks
-        { url: "/favicon.ico", type: "image/x-icon" },
-      ],
+      icon: { url: "/icon?v=2", type: "image/png", sizes: "32x32" },
       apple: "/icon-192.png",
     },
     appleWebApp: {
