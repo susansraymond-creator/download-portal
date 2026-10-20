@@ -15,9 +15,11 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
   const perPage = 20;
 
+  // Order by creation time (not updatedAt) so visitor views/downloads do not
+  // reshuffle the admin list.
   const [items, total] = await Promise.all([
     prisma.content.findMany({
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       skip: (page - 1) * perPage,
       take: perPage,
       include: { category: true, downloadLinks: { select: { id: true, status: true } } },
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
       authorId: session!.user.id,
       tags: { connect: data.tagIds.map((id) => ({ id })) },
       downloadLinks: {
-                create: data.downloadLinks.map((l, i) => ({
+        create: data.downloadLinks.map((l, i) => ({
           providerName: l.providerName,
           url: l.url || l.embedUrl || "#",
           embedUrl: l.embedUrl,

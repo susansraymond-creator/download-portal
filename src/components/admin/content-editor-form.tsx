@@ -18,9 +18,10 @@ type DownloadLinkForm = {
 };
 
 type Category = { id: string; name: string };
+type TagOption = { id: string; name: string };
 
 function extractSrc(value: string): string {
-  const match = value.match(/src=["\']([^"\']+)["\']/i);
+  const match = value.match(/src=["']([^"']+)["']/i);
   return match ? match[1] : value;
 }
 
@@ -41,12 +42,14 @@ export function ContentEditorForm({
   categories,
   qualityOptions,
   languageOptions,
+  tags,
   initial,
 }: {
   contentId?: string;
   categories: Category[];
   qualityOptions: string[];
   languageOptions: string[];
+  tags?: TagOption[];
   initial?: {
     title: string;
     slug: string;
@@ -70,6 +73,7 @@ export function ContentEditorForm({
     metaDescription: string;
     downloadLinks: DownloadLinkForm[];
     watchUrl: string;
+    tagIds?: string[];
   };
 }) {
   const router = useRouter();
@@ -83,6 +87,7 @@ export function ContentEditorForm({
   const [posterUrl, setPosterUrl] = useState(initial?.posterUrl || initial?.thumbnailUrl || "");
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnailUrl ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initial?.tagIds ?? []);
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
   const [hasSeasons, setHasSeasons] = useState(initial?.hasSeasons ?? false);
   const [accessLevel, setAccessLevel] = useState(initial?.accessLevel ?? "NORMAL");
@@ -113,26 +118,33 @@ export function ContentEditorForm({
   const [loading, setLoading] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
-function toggleLanguage(name: string) {
+  function toggleLanguage(name: string) {
     setLanguages((prev) =>
       prev.includes(name) ? prev.filter((l) => l !== name) : [...prev, name]
     );
   }
 
-function updateLink(i: number, patch: Partial<DownloadLinkForm>) {
+  function toggleTag(id: string) {
+    setSelectedTagIds((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+    );
+  }
+
+  function updateLink(i: number, patch: Partial<DownloadLinkForm>) {
     setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
 
-function onTitleChange(v: string) {
+  function onTitleChange(v: string) {
     setTitle(v);
     if (!slugTouched) setSlug(slugify(v, { lower: true, strict: true }));
   }
+
   async function onSubmit(e: React.FormEvent, saveAsStatus?: string) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-const payload = {
+    const payload = {
       title,
       slug,
       description,
@@ -142,7 +154,7 @@ const payload = {
       posterUrl: posterUrl || undefined,
       thumbnailUrl: posterUrl || undefined,
       categoryId: categoryId || undefined,
-      tagIds: [],
+      tagIds: selectedTagIds,
       isFeatured,
       hasSeasons,
       accessLevel,
@@ -174,7 +186,7 @@ const payload = {
         }),
     };
 
-const res = await fetch(
+    const res = await fetch(
       contentId ? "/api/admin/content/" + contentId : "/api/admin/content",
       {
         method: contentId ? "PATCH" : "POST",
@@ -183,22 +195,22 @@ const res = await fetch(
       }
     );
 
-setLoading(false);
+    setLoading(false);
 
-if (!res.ok) {
+    if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(typeof data.error === "string" ? data.error : "Failed to save. Check required fields.");
       return;
     }
 
-setJustSaved(true);
+    setJustSaved(true);
     setTimeout(() => {
       router.push("/admin/content");
       router.refresh();
     }, 600);
   }
 
-async function onDelete() {
+  async function onDelete() {
     if (!contentId) return;
     if (!confirm("Delete this content permanently? This cannot be undone.")) return;
     const res = await fetch("/api/admin/content/" + contentId, { method: "DELETE" });
@@ -210,14 +222,15 @@ async function onDelete() {
     router.push("/admin/content");
     router.refresh();
   }
+
   return (
     <form onSubmit={(e) => onSubmit(e)} className="space-y-8">
       {error && <p className="rounded-sm border border-danger p-3 text-sm text-danger">{error}</p>}
 
-<section className="index-card space-y-4 p-6">
+      <section className="index-card space-y-4 p-6">
         <h2 className="font-display text-lg">Basics</h2>
 
-<Field label="Title">
+        <Field label="Title">
           <input
             required
             value={title}
@@ -226,7 +239,7 @@ async function onDelete() {
           />
         </Field>
 
-<Field label="Slug">
+        <Field label="Slug">
           <input
             required
             value={slug}
@@ -238,7 +251,7 @@ async function onDelete() {
           />
         </Field>
 
-<Field label="Full description">
+        <Field label="Full description">
           <textarea
             required
             rows={6}
@@ -248,7 +261,7 @@ async function onDelete() {
           />
         </Field>
 
-<div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Category">
             <select
               value={categoryId}
@@ -265,7 +278,34 @@ async function onDelete() {
           </Field>
         </div>
 
-<Field label="Poster image URL (used for card and detail page)">
+        {tags && tags.length > 0 && (
+          <Field label="Tags">
+            <div className="flex flex-wrap gap-2">
+              {tags.map((t) => {
+                const on = selectedTagIds.includes(t.id);
+                return (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => toggleTag(t.id)}
+                    className={`rounded-sm border px-2.5 py-1 text-xs transition-colors ${
+                      on
+                        ? "border-teal bg-teal text-ink"
+                        : "border-border text-text-muted hover:text-text"
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-xs text-text-muted">
+              Tags are saved with the content.
+            </p>
+          </Field>
+        )}
+
+        <Field label="Poster image URL (used for card and detail page)">
           <input
             value={posterUrl}
             onChange={(e) => setPosterUrl(e.target.value)}
@@ -273,17 +313,17 @@ async function onDelete() {
           />
         </Field>
 
-<label className="flex items-center gap-2 text-sm text-text-muted">
+        <label className="flex items-center gap-2 text-sm text-text-muted">
           <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
           Feature on homepage
         </label>
 
-<label className="flex items-center gap-2 text-sm text-text-muted">
+        <label className="flex items-center gap-2 text-sm text-text-muted">
           <input type="checkbox" checked={hasSeasons} onChange={(e) => setHasSeasons(e.target.checked)} />
           This is a series (has seasons and episodes)
         </label>
 
-<Field label="Access level">
+        <Field label="Access level">
           <select
             value={accessLevel}
             onChange={(e) => setAccessLevel(e.target.value)}
@@ -294,7 +334,7 @@ async function onDelete() {
           </select>
         </Field>
 
-<Field label="IMDb rating (0-10, optional)">
+        <Field label="IMDb rating (0-10, optional)">
           <input
             type="number"
             step="0.1"
@@ -306,7 +346,7 @@ async function onDelete() {
           />
         </Field>
 
-<Field label="Quality badge">
+        <Field label="Quality badge">
           <select
             value={primaryQuality}
             onChange={(e) => setPrimaryQuality(e.target.value)}
@@ -321,7 +361,7 @@ async function onDelete() {
           </select>
         </Field>
 
-<Field label="Language badge (select one or more)">
+        <Field label="Language badge (select one or more)">
           <div className="flex flex-wrap gap-2">
             {languageList.map((l) => {
               const on = languages.includes(l);
@@ -346,7 +386,7 @@ async function onDelete() {
           </p>
         </Field>
 
-<Field label="Update label (e.g. S01 | Ep 1-8 Added)">
+        <Field label="Update label (e.g. S01 | Ep 1-8 Added)">
           <input
             value={updateLabel}
             onChange={(e) => setUpdateLabel(e.target.value)}
@@ -355,7 +395,7 @@ async function onDelete() {
           />
         </Field>
 
-{hasSeasons && (
+        {hasSeasons && (
           <Field label="Series status">
             <select
               value={seriesStatus}
@@ -370,7 +410,7 @@ async function onDelete() {
         )}
       </section>
 
-<section className="index-card space-y-4 p-6">
+      <section className="index-card space-y-4 p-6">
         <h2 className="font-display text-lg">Publishing</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Status">
@@ -395,6 +435,7 @@ async function onDelete() {
           </Field>
         </div>
       </section>
+
       {!hasSeasons && (
         <section className="index-card space-y-4 p-6">
           <Field label="Watch link (optional, opens in new tab)">
@@ -406,7 +447,7 @@ async function onDelete() {
             />
           </Field>
 
-<div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-2">
             <h2 className="font-display text-lg">Servers / Download links</h2>
             <button
               type="button"
@@ -415,11 +456,11 @@ async function onDelete() {
               }}
               className="rounded-sm border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text"
             >
-                           + Add server
+              + Add server
             </button>
           </div>
 
-<div className="space-y-4">
+          <div className="space-y-4">
             {links.map((link, i) => (
               <div key={i} className="grid gap-3 rounded-sm border border-border p-4 sm:grid-cols-2">
                 <Field label="Server name (e.g. Server 1)">
@@ -466,7 +507,7 @@ async function onDelete() {
         </section>
       )}
 
-{hasSeasons && contentId && (
+      {hasSeasons && contentId && (
         <p className="rounded-sm border border-teal/40 bg-teal/5 p-4 text-sm text-text-muted">
           This content uses Seasons and Episodes for downloads. Manage them from the{" "}
           <a href={"/admin/content/" + contentId + "/seasons"} className="text-teal hover:underline">
@@ -476,7 +517,7 @@ async function onDelete() {
         </p>
       )}
 
-<div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={loading}

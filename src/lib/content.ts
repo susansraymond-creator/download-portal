@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { cached } from "@/lib/redis";
 import type { Prisma } from "@prisma/client";
 
@@ -37,29 +37,40 @@ export async function getFeaturedContent(limit = 6) {
     prisma.content.findMany({
       where: { ...PUBLISHED_WHERE, isFeatured: true },
       select: CARD_SELECT,
-      orderBy: { publishedAt: "desc" },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
       take: limit,
     })
   );
 }
 
 export async function getRecentContent(limit = 12) {
+  // Order by publish/creation time (not updatedAt) so visitor views and
+  // downloads do not reshuffle "Recently Added".
   return cached(`content:recent:${limit}`, 60, () =>
     prisma.content.findMany({
       where: PUBLISHED_WHERE,
       select: CARD_SELECT,
-      orderBy: { publishedAt: "desc" },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       take: limit,
     })
   );
 }
 
 export async function getPopularContent(limit = 12) {
-  return cached(`content:popular:${limit}`, 300, () =>
+  // Exclude featured (pinned) content and keep a stable tie-breaker ranking.
+  // The query fetches extra rows so the homepage can also drop any featured
+  // overlap defensively and still fill the trending grid.
+  return cached(`content:popular:${limit}`, 60, () =>
     prisma.content.findMany({
-      where: PUBLISHED_WHERE,
+      where: { ...PUBLISHED_WHERE, isFeatured: false },
       select: CARD_SELECT,
-      orderBy: [{ viewCount: "desc" }, { downloadCount: "desc" }, { publishedAt: "desc" }],
+      orderBy: [
+        { viewCount: "desc" },
+        { downloadCount: "desc" },
+        { publishedAt: "desc" },
+        { createdAt: "desc" },
+        { id: "desc" },
+      ],
       take: limit,
     })
   );
@@ -70,7 +81,7 @@ export async function getHomeFeed(limit = 60) {
     prisma.content.findMany({
       where: PUBLISHED_WHERE,
       select: CARD_SELECT,
-      orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }],
+      orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       take: limit,
     })
   );
@@ -81,7 +92,7 @@ export async function getHomeFeedPage(page: number, perPage = 30) {
     prisma.content.findMany({
       where: PUBLISHED_WHERE,
       select: CARD_SELECT,
-      orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }],
+      orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       skip: (page - 1) * perPage,
       take: perPage,
     }),
@@ -149,7 +160,7 @@ export interface BrowseParams {
 export async function browseContent(params: BrowseParams) {
   const where: Prisma.ContentWhereInput = { ...PUBLISHED_WHERE };
 
-if (params.q) {
+  if (params.q) {
     where.OR = [
       { title: { contains: params.q, mode: "insensitive" } },
       { description: { contains: params.q, mode: "insensitive" } },
@@ -177,7 +188,7 @@ if (params.q) {
     where.primaryQuality = { equals: params.quality, mode: "insensitive" };
   }
 
-const orderBy: Prisma.ContentOrderByWithRelationInput =
+  const orderBy: Prisma.ContentOrderByWithRelationInput =
     params.sort === "popular"
       ? { viewCount: "desc" }
       : params.sort === "downloads"
@@ -186,7 +197,7 @@ const orderBy: Prisma.ContentOrderByWithRelationInput =
           ? { title: "asc" }
           : { publishedAt: "desc" };
 
-const [items, total] = await Promise.all([
+  const [items, total] = await Promise.all([
     prisma.content.findMany({
       where,
       select: CARD_SELECT,
@@ -197,7 +208,7 @@ const [items, total] = await Promise.all([
     prisma.content.count({ where }),
   ]);
 
-return { items, total, pages: Math.ceil(total / params.perPage) };
+  return { items, total, pages: Math.ceil(total / params.perPage) };
 }
 
 export async function getContentBySlug(slug: string) {
@@ -238,8 +249,7 @@ export async function getRelatedContent(contentId: string, categoryId: string | 
       ...(categoryId ? { categoryId } : {}),
     },
     select: CARD_SELECT,
-    orderBy: { publishedAt: "desc" },
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
     take: limit,
   });
 }
-

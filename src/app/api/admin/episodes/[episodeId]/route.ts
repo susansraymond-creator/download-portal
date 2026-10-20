@@ -4,6 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/api-guard";
 import { invalidateCache } from "@/lib/redis";
 
+// Episode serial labels may be a single number ("3") or a range ("1-10").
+// Digits separated by a hyphen, space, en dash (u2013) or em dash (u2014).
+const episodeLabelSchema = z
+  .string()
+  .trim()
+  .regex(/^\d+(?:[ \u002d\u2013\u2014]\d+)?$/, "Use a number or range such as 1-10");
+
 const episodeLinkSchema = z.object({
   providerName: z.string().min(1).default("Server"),
   url: z.string().url().optional().or(z.literal("")),
@@ -17,6 +24,7 @@ const episodeLinkSchema = z.object({
 
 const episodePatchSchema = z.object({
   episodeNumber: z.number().int().min(1).optional(),
+  episodeNumberLabel: episodeLabelSchema.optional().nullable(),
   title: z.string().min(1).max(150).optional(),
   description: z.string().max(2000).optional(),
   thumbnailUrl: z.string().url().optional().or(z.literal("")),
@@ -34,13 +42,36 @@ export async function PATCH(
 
   const { episodeId } = await params;
   const parsed = episodePatchSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
+      { status: 400 }
+    );
+  }
 
   const existing = await prisma.episode.findUnique({
     where: { id: episodeId },
     include: { season: true },
   });
   if (!existing) return NextResponse.json({ error: "Episode not found" }, { status: 404 });
+
+  // Reject duplicate serial numbers within the same season.
+  if (
+    parsed.data.episodeNumber !== undefined &&
+    parsed.data.episodeNumber !== existing.episodeNumber
+  ) {
+    const duplicate = await prisma.episode.findUnique({
+      where: {
+        seasonId_episodeNumber: {
+          seasonId: existing.seasonId,
+          episodeNumber: parsed.data.episodeNumber,
+        },
+      },
+    });
+    if (duplicate) {
+      return NextResponse.json({ error: "That episode number already exists" }, { status: 409 });
+    }
+  }
 
   const episode = await prisma.$transaction(async (tx) => {
     if (parsed.data.downloadLinks) {
@@ -58,7 +89,7 @@ export async function PATCH(
         ...(parsed.data.watchUrl !== undefined && { watchUrl: parsed.data.watchUrl || null }),
         ...(parsed.data.downloadLinks !== undefined && {
           downloadLinks: {
-                        create: parsed.data.downloadLinks.map((l, i) => ({
+            create: parsed.data.downloadLinks.map((l, i) => ({
               providerName: l.providerName,
               url: l.url || l.embedUrl || "#",
               embedUrl: l.embedUrl || null,
@@ -75,15 +106,23 @@ export async function PATCH(
     });
   });
 
-  // Bump the parent content's updatedAt so "Recently updated" reflects
-  // this edit, per the "recently added" ranking requirement.
+  // episodeNumberLabel is written via raw SQL until the Prisma client is
+  // regenerated with the new optional field.
+  if (parsed.data.episodeNumberLabel !== undefined) {
+    await prisma.$executeRaw`UPDATE "Episode" SET "episodeNumberLabel" = ${parsed.data.episodeNumberLabel ?? null} WHERE "id" = ${episodeId}`;
+  }
+
+  // Bump the parent content's updatedAt so "Recently updated" reflects this edit.
   await prisma.content.update({
     where: { id: existing.season.contentId },
     data: { updatedAt: new Date() },
   });
 
   await invalidateCache("content:*");
-  return NextResponse.json({ ok: true, episode });
+  return NextResponse.json({
+    ok: true,
+    episode: { ...episode, episodeNumberLabel: parsed.data.episodeNumberLabel ?? null },
+  });
 }
 
 export async function DELETE(

@@ -3,9 +3,10 @@ import { ContentEditorForm } from "@/components/admin/content-editor-form";
 import { getBadgeOptions } from "@/lib/badges";
 
 export default async function NewContentPage() {
-  const [categories, badgeOptions] = await Promise.all([
+  const [categories, badgeOptions, tags] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     getBadgeOptions(),
+    prisma.tag.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   return (
@@ -15,6 +16,7 @@ export default async function NewContentPage() {
         categories={categories}
         qualityOptions={badgeOptions.qualities.map((q) => q.name)}
         languageOptions={badgeOptions.languages.map((l) => l.name)}
+        tags={tags}
       />
     </div>
   );

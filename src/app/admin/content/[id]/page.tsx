@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ContentEditorForm } from "@/components/admin/content-editor-form";
-import { ContentTagsField } from "@/components/admin/content-tags-field";
 import { getBadgeOptions } from "@/lib/badges";
 
 export default async function EditContentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,13 +16,14 @@ export default async function EditContentPage({ params }: { params: Promise<{ id
     <div>
       <div className="mb-8 flex items-center justify-between">
         <h1 className="font-display text-3xl">Edit content</h1>
-        <a href={`/admin/content/${content.id}/seasons`} className="rounded-sm border border-teal px-4 py-2 text-sm text-teal hover:bg-teal hover:text-ink">Manage Seasons &amp; Episodes →</a>
+        <a href={`/admin/content/${content.id}/seasons`} className="rounded-sm border border-teal px-4 py-2 text-sm text-teal hover:bg-teal hover:text-ink">Manage Seasons &amp; Episodes</a>
       </div>
       <ContentEditorForm
         contentId={content.id}
         categories={categories}
         qualityOptions={badgeOptions.qualities.map((q) => q.name)}
         languageOptions={badgeOptions.languages.map((l) => l.name)}
+        tags={tags}
         initial={{
           title: content.title, slug: content.slug, description: content.description,
           shortDescription: content.shortDescription ?? "", type: content.type, status: content.status,
@@ -33,10 +33,10 @@ export default async function EditContentPage({ params }: { params: Promise<{ id
           primaryLanguage: content.primaryLanguage ?? "", updateLabel: content.updateLabel ?? "", seriesStatus: content.seriesStatus ?? "",
           watchUrl: content.watchUrl ?? "", publishAt: content.publishAt ? content.publishAt.toISOString().slice(0, 16) : "",
           metaTitle: content.metaTitle ?? "", metaDescription: content.metaDescription ?? "",
+          tagIds: content.tags.map((tag) => tag.id),
           downloadLinks: content.downloadLinks.map((l) => ({ id: l.id, providerName: l.providerName, url: l.url, embedUrl: l.embedUrl ?? "", fileSize: l.fileSize ?? "", version: l.version ?? "", quality: l.quality ?? "", language: l.language ?? "", notes: l.notes ?? "", status: l.status })),
         }}
       />
-      <ContentTagsField contentId={content.id} tags={tags} initialTagIds={content.tags.map((tag) => tag.id)} />
     </div>
   );
 }
