@@ -97,7 +97,7 @@ export default async function RootLayout({
   const gaId = (settingsMap.googleAnalyticsId as string) || process.env.NEXT_PUBLIC_GA_ID;
   const siteVerification =
     (settingsMap.googleSiteVerification as string) || process.env.GOOGLE_SITE_VERIFICATION;
-  const adsensePublisherId = (settingsMap.googleAdsensePublisherId as string) | undefined;
+  const adsensePublisherId = (settingsMap.googleAdsensePublisherId as string) || undefined;
   const adsenseEnabled = (settingsMap.adsenseEnabled as boolean) ?? false;
 
   return (
