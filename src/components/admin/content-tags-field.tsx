@@ -15,7 +15,7 @@ export function ContentTagsField({ contentId, tags, initialTagIds }: { contentId
   async function save() {
     setSaving(true); setMessage("");
     try {
-      const response = await fetch(`/api/admin/content/${contentId}/tags`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tagIds: selected }) });
+      const response = await fetch(`/api/admin/content/${contentId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tagIds: selected }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Failed to save tags");
       setMessage("Tags saved as a pending change. Accept it from Updates.");
