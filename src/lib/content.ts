@@ -77,22 +77,27 @@ export async function getPopularContent(limit = 12) {
 }
 
 export async function getHomeFeed(limit = 60) {
+  // Pinned content already appears in the "Pinned Picks" hero section above,
+  // so the home feed stays purely chronological (newest first).
   return cached(`content:homefeed:${limit}`, 60, () =>
     prisma.content.findMany({
       where: PUBLISHED_WHERE,
       select: CARD_SELECT,
-      orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       take: limit,
     })
   );
 }
 
 export async function getHomeFeedPage(page: number, perPage = 30) {
+  // "Recently Added" shows the newest content first. Pinned items already
+  // have their own "Pinned Picks" section at the top of the homepage, so
+  // the feed itself stays strictly chronological.
   const [items, total] = await Promise.all([
     prisma.content.findMany({
       where: PUBLISHED_WHERE,
       select: CARD_SELECT,
-      orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       skip: (page - 1) * perPage,
       take: perPage,
     }),
