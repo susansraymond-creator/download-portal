@@ -52,14 +52,51 @@ function extractSrc(value: string): string {
   return match ? match[1] : value;
 }
 
-// Accepts "3" or "1-10" style serial labels.
+// Accepts "3", "1-10", or abbreviated ranges like "1263-68" (= 1263-1268).
 function parseSerial(value: string): { number: number; label: string } | null {
   const trimmed = value.trim();
-  const match = trimmed.match(/^(\d+)(?:[ -](\d+))?$/);
-  if (!match) return null;
-  const number = Number(match[1]);
-  if (match[2] && Number(match[2]) <= number) return null;
-  return { number, label: match[2] ? `${match[1]}-${match[2]}` : String(number) };
+
+  // Single number.
+  const single = trimmed.match(/^(\d+)$/);
+  if (single) {
+    const number = Number(single[1]);
+    return number >= 1 && Number.isSafeInteger(number)
+      ? { number, label: String(number) }
+      : null;
+  }
+
+  // Range: digits, separator (hyphen / en dash / em dash), digits.
+  const range = trimmed.match(/^(\d+)[ \u002d\u2013\u2014](\d+)$/);
+  if (!range) return null;
+
+  const startText = range[1];
+  const endText = range[2];
+  const start = Number(startText);
+  let end = Number(endText);
+
+  // Expand an abbreviated end: "1263-68" means 1263-1268. The end shares the
+  // leading digits of the start; only the differing tail is written.
+  if (endText.length < startText.length) {
+    const prefix = startText.slice(0, startText.length - endText.length);
+    end = Number(prefix + endText);
+    // If the expanded end still does not exceed the start (e.g. "1299-00"),
+    // carry over into the prefix (1299-1300).
+    if (end <= start) {
+      end = Number(String(Number(prefix) + 1) + endText);
+    }
+  }
+
+  if (
+    !Number.isSafeInteger(start) ||
+    !Number.isSafeInteger(end) ||
+    start < 1 ||
+    end <= start
+  ) {
+    return null;
+  }
+
+  // Keep the label exactly as typed so the admin sees "1263-68" back.
+  return { number: start, label: `${startText}-${endText}` };
 }
 
 export function SeasonManager({
@@ -274,7 +311,7 @@ function EpisodeBlock({
     setError("");
     const parsed = parseSerial(serial);
     if (!parsed) {
-      setError("Serial must be a number or range like 1-10 (end must be greater than start).");
+      setError("Use a number or range like 1-10 (end must be greater than start).");
       return;
     }
     setSaving(true);
