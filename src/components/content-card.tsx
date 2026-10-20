@@ -48,7 +48,9 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function ContentCard({ content }: { content: CardContent }) {
   const image = content.thumbnailUrl || content.posterUrl;
-  const updated = content.updatedAt ?? content.createdAt;
+  // Show the "added" time, not updatedAt: visitor views/downloads bump
+  // updatedAt and would otherwise reshuffle the card labels.
+  const added = content.createdAt ?? content.updatedAt;
 
   return (
     <Link
@@ -72,7 +74,7 @@ export function ContentCard({ content }: { content: CardContent }) {
 
         {content.imdbRating != null && (
           <span className="absolute left-2 top-2 flex items-center gap-1 rounded-sm bg-ink/85 px-1.5 py-0.5 font-mono text-[0.65rem] font-bold text-brass">
-            ★ {content.imdbRating.toFixed(1)}
+            * {content.imdbRating.toFixed(1)}
           </span>
         )}
 
@@ -93,7 +95,7 @@ export function ContentCard({ content }: { content: CardContent }) {
 
       <div className="flex flex-1 flex-col gap-1 p-2.5">
         <div className="flex flex-wrap items-center gap-1">
-         {content.primaryLanguage
+          {content.primaryLanguage
             ?.split(",")
             .map((l) => l.trim())
             .filter(Boolean)
@@ -139,7 +141,7 @@ export function ContentCard({ content }: { content: CardContent }) {
             </svg>
             {content.viewCount.toLocaleString()}
           </span>
-          {updated && <span>{timeAgo(updated)}</span>}
+          {added && <span>{timeAgo(added)}</span>}
         </p>
       </div>
     </Link>
