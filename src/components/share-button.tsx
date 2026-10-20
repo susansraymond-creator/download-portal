@@ -155,7 +155,7 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
       </button>
 
       {open && (
-        <div className="pop-in absolute bottom-full left-1/2 z-50 mb-3 w-64 -translate-x-1/2 rounded-2xl border border-border bg-surface-raised p-3 shadow-2xl">
+        <div className="pop-in-centered absolute bottom-full left-1/2 z-50 mb-3 w-64 -translate-x-1/2 rounded-2xl border border-border bg-surface-raised p-3 shadow-2xl">
           <p className="mb-2.5 text-center font-mono text-[0.6rem] uppercase tracking-widest text-text-muted">
             Share via
           </p>
