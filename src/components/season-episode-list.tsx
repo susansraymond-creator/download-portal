@@ -16,6 +16,7 @@ type DownloadLink = {
 type Episode = {
   id: string;
   episodeNumber: number;
+  episodeNumberLabel?: string | null;
   title: string;
   duration: string | null;
   watchUrl: string | null;
@@ -28,6 +29,10 @@ type Season = {
   title: string | null;
   episodes: Episode[];
 };
+
+function displayNumber(ep: Episode): string {
+  return ep.episodeNumberLabel ?? String(ep.episodeNumber);
+}
 
 export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
   const [search, setSearch] = useState("");
@@ -44,7 +49,7 @@ export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="font-display text-xl text-teal">📺 Episode-wise Links</h2>
+        <h2 className="font-display text-xl text-teal">Episode-wise Links</h2>
         <p className="mt-1 text-sm text-brass">Download your favorite episodes</p>
       </div>
 
@@ -72,38 +77,36 @@ export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
       {activeEpisode && (
         <div className="space-y-3">
           <p className="text-center font-display text-lg">
-            Episode {activeEpisode.episodeNumber}: {activeEpisode.title}
+            Episode {displayNumber(activeEpisode)}: {activeEpisode.title}
           </p>
 
           <SmartPlayer links={activeEpisode.downloadLinks} />
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             {activeEpisode.watchUrl && (
-              
               <a
                 href={activeEpisode.watchUrl}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
                 className="inline-flex items-center gap-1 text-sm text-teal hover:underline"
               >
-                ▶ Watch Online (new tab)
+                Watch Online (new tab)
               </a>
             )}
-                        {activeEpisode.downloadLinks
+            {activeEpisode.downloadLinks
               .filter((l) => l.url && l.url !== "#" && l.url !== l.embedUrl)
               .map((l) => (
-              
-              <a
-                key={l.id}
-                href={l.url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="rounded-sm bg-brass px-3 py-1.5 text-xs font-medium text-ink hover:bg-brass-bright"
-              >
-                                ⬇ Download
-                {l.quality ? ` [${l.quality}` : ""}
-                {l.fileSize ? ` · ${l.fileSize}]` : l.quality ? "]" : ""}
-              </a>
+                <a
+                  key={l.id}
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="rounded-sm bg-brass px-3 py-1.5 text-xs font-medium text-ink hover:bg-brass-bright"
+                >
+                  Download
+                  {l.quality ? ` [${l.quality}` : ""}
+                  {l.fileSize ? ` - ${l.fileSize}]` : l.quality ? "]" : ""}
+                </a>
               ))}
           </div>
         </div>
@@ -112,7 +115,7 @@ export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search episode number or title…"
+        placeholder="Search episode number or title..."
         className="w-full rounded-sm border border-border bg-surface px-4 py-2.5 text-sm"
       />
 
@@ -123,6 +126,7 @@ export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
               if (!query) return true;
               return (
                 ep.title.toLowerCase().includes(query) ||
+                displayNumber(ep).includes(query) ||
                 String(ep.episodeNumber).includes(query)
               );
             })
@@ -132,13 +136,13 @@ export function SeasonEpisodeList({ seasons }: { seasons: Season[] }) {
               <button
                 key={ep.id}
                 onClick={() => setActiveEpisodeId(ep.id)}
-                className={`h-11 w-11 rounded-sm border font-mono text-sm font-bold ${
+                className={`h-11 min-w-11 rounded-sm border px-2 font-mono text-sm font-bold ${
                   activeEpisode?.id === ep.id
                     ? "border-brass bg-brass text-ink"
                     : "border-border text-text-muted hover:border-text-muted hover:text-text"
                 }`}
               >
-                {ep.episodeNumber}
+                {displayNumber(ep)}
               </button>
             ))}
         </div>
