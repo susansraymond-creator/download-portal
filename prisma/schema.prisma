@@ -6,9 +6,9 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 // AUTH / USERS
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 
 enum Role {
   VISITOR
@@ -100,20 +100,20 @@ model Session {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
+  id        String    @id @default(cuid())
+  token     String     @unique
   userId    String
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
 }
 
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 // CONTENT
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 
 enum ContentType {
   VIDEO
@@ -257,6 +257,10 @@ model Episode {
   seasonId      String
   season        Season     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   episodeNumber Int
+  // Optional display label supporting ranges such as "1-10". When null the
+  // integer episodeNumber is shown. Kept separate so existing integer data
+  // and the unique index remain untouched.
+  episodeNumberLabel String?
   title         String
   description   String?    @db.Text
   thumbnailUrl  String?
@@ -459,9 +463,9 @@ model Setting {
   value Json
 }
 
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 // CONTENT CHANGE APPROVALS
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 
 model ContentChange {
   id            String   @id @default(cuid())
@@ -490,5 +494,3 @@ model WatchEvent {
 @@unique([userId, contentId])
   @@index([userId, watchedAt])
 }
-
-
