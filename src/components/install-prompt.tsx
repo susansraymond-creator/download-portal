@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-// Once dismissed, the prompt is never shown again in that browser.
-const DISMISS_KEY = "kdl-install-prompt-dismissed";
+// Set permanently once the app is installed — the pill never shows again.
+const INSTALLED_KEY = "kdl-app-installed";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -23,10 +23,16 @@ function isStandalone() {
 /**
  * Compact bottom pill that invites visitors to install the PWA.
  *
- * - Skipped entirely when the app is already installed (standalone) or was
- *   dismissed before — refreshing the page will never bring it back.
+ * Behavior:
+ * - Shows on the HOMEPAGE — on first load, on every refresh, and again
+ *   every time the visitor returns to the homepage (e.g. after viewing a
+ *   content page) — as long as the app is not installed.
+ * - Cancel (✕) only hides it for the current view; it does NOT persist.
+ *   Coming back to the homepage shows it again.
+ * - Once installed (standalone launch, appinstalled event, or the stored
+ *   flag) it never shows again on mobile or PC.
  * - Tapping Install triggers the browser install dialog directly.
- * - On iOS (no native install prompt), the Install tap reveals the
+ * - On iOS (no native install prompt), tapping Install reveals the
  *   "Share -> Add to Home Screen" steps inline.
  */
 export function InstallPrompt() {
@@ -35,12 +41,17 @@ export function InstallPrompt() {
   const [showIosSteps, setShowIosSteps] = useState(false);
   const pathname = usePathname();
   const [isIos, setIsIos] = useState(false);
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    // Never show inside the admin panel or once the app is installed.
-    if (pathname?.startsWith("/admin")) return;
-    if (localStorage.getItem(DISMISS_KEY) === "1") return;
-    if (isStandalone()) return;
+    // The pill lives on the homepage only.
+    if (pathname !== "/") {
+      setVisible(false);
+      return;
+    }
+
+    // Installed (or launched as an installed app) — never show again.
+    if (localStorage.getItem(INSTALLED_KEY) === "1" || isStandalone()) return;
 
     const iosDevice = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
     setIsIos(iosDevice);
@@ -49,10 +60,8 @@ export function InstallPrompt() {
 
     function onBeforeInstallPrompt(e: Event) {
       e.preventDefault();
-      // Chrome can fire this even on browsers where the app is already
-      // installed — double-check before showing.
-      if (isStandalone()) return;
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      promptRef.current = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(promptRef.current);
       setVisible(true);
     }
 
@@ -61,12 +70,22 @@ export function InstallPrompt() {
         if (!isStandalone()) setVisible(true);
       }, 2500);
     } else {
-      window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      // The browser fires beforeinstallprompt only once per page load, so
+      // when the visitor returns to the homepage re-show the prompt we
+      // already captured instead of waiting for a second event.
+      if (promptRef.current) {
+        setDeferredPrompt(promptRef.current);
+        setVisible(true);
+      } else {
+        window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      }
     }
 
     const onAppInstalled = () => {
+      localStorage.setItem(INSTALLED_KEY, "1");
       setVisible(false);
       setDeferredPrompt(null);
+      promptRef.current = null;
     };
     window.addEventListener("appinstalled", onAppInstalled);
 
@@ -86,14 +105,18 @@ export function InstallPrompt() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
+      localStorage.setItem(INSTALLED_KEY, "1");
       setVisible(false);
       setDeferredPrompt(null);
+      promptRef.current = null;
     }
   }
 
+  // Cancel only hides for now — the pill returns the next time the
+  // visitor lands on the homepage or refreshes, until they install.
   function dismiss() {
-    localStorage.setItem(DISMISS_KEY, "1");
     setVisible(false);
+    setShowIosSteps(false);
   }
 
   if (!visible) return null;
@@ -113,7 +136,7 @@ export function InstallPrompt() {
           </div>
           <button
             onClick={dismiss}
-            aria-label="Dismiss install prompt"
+            aria-label="Close install prompt"
             className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-text-muted transition-colors hover:bg-border/40 hover:text-text"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
