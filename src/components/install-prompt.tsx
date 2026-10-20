@@ -6,6 +6,11 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 const DISMISS_KEY = "kdl-install-prompt-dismissed";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 /**
  * Bottom-sheet "Install App" popup for the PWA.
  *
@@ -13,12 +18,14 @@ const DISMISS_KEY = "kdl-install-prompt-dismissed";
  *   localStorage) or the app is installed.
  * - Matches the classic install banner look: site icon + site name on the
  *   left, prominent Install button on the right.
- * - Uses the browser's native install prompt when available (beforeinstallprompt),
- *   falling back to an install hint on iOS Safari which does not support it.
+ * - Uses the browser's native install prompt when available
+ *   (beforeinstallprompt); on iOS Safari, which does not support it, the
+ *   Install button expands into the "Share -> Add to Home Screen" steps.
  */
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
+  const [showIosSteps, setShowIosSteps] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isIos, setIsIos] = useState(false);
@@ -26,9 +33,6 @@ export function InstallPrompt() {
   useEffect(() => {
     // Never nag inside the admin panel.
     if (pathname?.startsWith("/admin")) return;
-
-    // Respect a "skip prompt" flag, e.g. for the login/register pages.
-    if (searchParams?.get("install") === "skip") return;
 
     const dismissed = localStorage.getItem(DISMISS_KEY);
     const standalone =
@@ -65,7 +69,7 @@ export function InstallPrompt() {
       window.removeEventListener("appinstalled", onAppInstalled);
       if (timer) clearTimeout(timer);
     };
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   async function install() {
     if (!deferredPrompt) return;
@@ -86,50 +90,57 @@ export function InstallPrompt() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4">
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 rounded-lg border border-border bg-surface p-4 shadow-2xl sm:flex-row sm:justify-between sm:p-5">
+      <div className="mx-auto max-w-5xl rounded-lg border border-border bg-surface p-4 shadow-2xl sm:p-5">
         <div className="flex items-center gap-3">
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md">
-            <Image src="/icon-192.png" alt="App icon" fill sizes="48px" className="object-cover" />
+            <Image src="/icon-192.png" alt="koreandramalink app icon" fill sizes="48px" className="object-cover" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="font-display text-lg font-bold leading-tight">koreandramalink</p>
             <p className="font-mono text-xs text-text-muted">
               {isIos ? "Add to Home Screen for quick access" : "Install app for quick access"}
             </p>
           </div>
-        </div>
 
-        <div className="flex w-full gap-2 sm:w-auto">
-          <button
-            onClick={dismiss}
-            className="flex-1 rounded-sm border border-border px-4 py-2 text-sm text-text-muted transition-colors hover:border-brass hover:text-brass sm:flex-none"
-          >
-            Not now
-          </button>
           {isIos ? (
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                dismiss();
-              }}
-              className="flex-1 rounded-sm bg-brass px-4 py-2 text-center text-sm font-medium text-black sm:flex-none"
-            >
-              Install
-            </a>
-on iOS the Install button
-            {isIos && (
-              <p className="sr-only">On iOS, tap the Share icon and choose Add to Home Screen.</p>
-            )}
+            <div className="flex shrink-0 gap-2">
+              <button
+                onClick={dismiss}
+                className="rounded-sm border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:border-brass hover:text-brass"
+              >
+                Not now
+              </button>
+              <button
+                onClick={() => setShowIosSteps((v) => !v)}
+                className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-black"
+              >
+                Install
+              </button>
+            </div>
           ) : (
-            <button
-              onClick={install}
-              className="flex-1 rounded-sm bg-brass px-4 py-2 text-sm font-medium text-black sm:flex-none"
-            >
-              Install
-            </button>
+            <div className="flex shrink-0 gap-2">
+              <button
+                onClick={dismiss}
+                className="rounded-sm border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:border-brass hover:text-brass"
+              >
+                Not now
+              </button>
+              <button
+                onClick={install}
+                className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-black"
+              >
+                Install
+              </button>
+            </div>
           )}
         </div>
+
+        {isIos && showIosSteps && (
+          <p className="mt-3 rounded-sm border border-border bg-background/60 px-3 py-2 text-sm text-text-muted">
+            iOS-এ install করতে: Safari-র নিচে <span className="text-brass">Share (⬆)</span> বাটনে ট্যাপ করুন →{" "}
+            <span className="text-brass">Add to Home Screen</span> → তারপর <span className="text-brass">Add</span>।
+          </p>
+        )}
       </div>
     </div>
   );
