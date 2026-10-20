@@ -1,17 +1,35 @@
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://koreandramalink.vercel.app";
 
-  const items = await prisma.content.findMany({
-    where: {
-      status: "PUBLISHED",
-      OR: [{ categoryId: null }, { category: { isHidden: false } }],
-    },
-    orderBy: { publishedAt: "desc" },
-    take: 50,
-    select: { title: true, slug: true, shortDescription: true, publishedAt: true, createdAt: true },
-  });
+  const now = new Date();
+
+  // Only include content that is visible on the public site right now, and
+  // use the configured site name from settings instead of a hardcoded brand.
+  const [items, siteNameSetting] = await Promise.all([
+    prisma.content.findMany({
+      where: {
+        status: "PUBLISHED",
+        AND: [
+          { OR: [{ publishAt: null }, { publishAt: { lte: now } }] },
+          { OR: [{ categoryId: null }, { category: { isHidden: false } }] },
+        ],
+      },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+      take: 50,
+      select: {
+        title: true,
+        slug: true,
+        shortDescription: true,
+        publishedAt: true,
+        createdAt: true,
+      },
+    }),
+    prisma.setting.findUnique({ where: { key: "siteName" } }).catch(() => null),
+  ]);
+  const siteName = (siteNameSetting?.value as string) || "The Stacks";
 
   const xmlItems = items
     .map(
@@ -29,9 +47,9 @@ export async function GET() {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>The Stacks — Recently added</title>
+    <title>${escapeXml(siteName)} - Recently added</title>
     <link>${siteUrl}</link>
-    <description>Recently added content on The Stacks</description>
+    <description>Recently added content on ${escapeXml(siteName)}</description>
     ${xmlItems}
   </channel>
 </rss>`;
