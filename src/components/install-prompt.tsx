@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 const DISMISS_KEY = "kdl-install-prompt-dismissed";
 
@@ -21,13 +21,15 @@ interface BeforeInstallPromptEvent extends Event {
  * - Uses the browser's native install prompt when available
  *   (beforeinstallprompt); on iOS Safari, which does not support it, the
  *   Install button expands into the "Share -> Add to Home Screen" steps.
+ * - Deliberately does NOT use useSearchParams: that hook requires a
+ *   Suspense boundary when rendered from the root layout and would break
+ *   static generation of every page.
  */
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [showIosSteps, setShowIosSteps] = useState(false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
@@ -102,37 +104,29 @@ export function InstallPrompt() {
             </p>
           </div>
 
-          {isIos ? (
-            <div className="flex shrink-0 gap-2">
-              <button
-                onClick={dismiss}
-                className="rounded-sm border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:border-brass hover:text-brass"
-              >
-                Not now
-              </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={dismiss}
+              className="rounded-sm border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:border-brass hover:text-brass"
+            >
+              Not now
+            </button>
+            {isIos ? (
               <button
                 onClick={() => setShowIosSteps((v) => !v)}
                 className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-black"
               >
                 Install
               </button>
-            </div>
-          ) : (
-            <div className="flex shrink-0 gap-2">
-              <button
-                onClick={dismiss}
-                className="rounded-sm border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:border-brass hover:text-brass"
-              >
-                Not now
-              </button>
+            ) : (
               <button
                 onClick={install}
                 className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-black"
               >
                 Install
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {isIos && showIosSteps && (
