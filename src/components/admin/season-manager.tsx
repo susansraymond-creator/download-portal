@@ -18,6 +18,7 @@ type DownloadLink = {
 type Episode = {
   id: string;
   episodeNumber: number;
+  episodeNumberLabel?: string | null;
   title: string;
   description: string | null;
   thumbnailUrl: string | null;
@@ -49,6 +50,16 @@ const emptyLink: DownloadLink = {
 function extractSrc(value: string): string {
   const match = value.match(/src=["']([^"']+)["']/i);
   return match ? match[1] : value;
+}
+
+// Accepts "3" or "1-10" style serial labels.
+function parseSerial(value: string): { number: number; label: string } | null {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d+)(?:[ -](\d+))?$/);
+  if (!match) return null;
+  const number = Number(match[1]);
+  if (match[2] && Number(match[2]) <= number) return null;
+  return { number, label: match[2] ? `${match[1]}-${match[2]}` : String(number) };
 }
 
 export function SeasonManager({
@@ -190,7 +201,7 @@ function SeasonBlock({
             seasonSaved ? "border-teal text-teal" : "border-border text-text-muted hover:text-text"
           }`}
         >
-          {seasonSaved ? "Saved ✓" : "Save"}
+          {seasonSaved ? "Saved" : "Save"}
         </button>
         <button onClick={onDelete} className="text-xs text-danger hover:underline">
           Delete season
@@ -231,7 +242,9 @@ function EpisodeBlock({
   onDelete: () => void;
 }) {
   const [title, setTitle] = useState(episode.title);
-  const [episodeNumber, setEpisodeNumber] = useState(episode.episodeNumber);
+  const [serial, setSerial] = useState(
+    episode.episodeNumberLabel ?? String(episode.episodeNumber)
+  );
   const [watchUrl, setWatchUrl] = useState(episode.watchUrl ?? "");
   const [links, setLinks] = useState<DownloadLink[]>(
     episode.downloadLinks.length > 0
@@ -246,22 +259,34 @@ function EpisodeBlock({
   );
   const [saving, setSaving] = useState(false);
   const [episodeSaved, setEpisodeSaved] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   function updateLink(i: number, patch: Partial<DownloadLink>) {
     setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
 
+  function removeLink(i: number) {
+    setLinks((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
+  }
+
   async function save() {
+    setError("");
+    const parsed = parseSerial(serial);
+    if (!parsed) {
+      setError("Serial must be a number or range like 1-10 (end must be greater than start).");
+      return;
+    }
     setSaving(true);
     const res = await fetch(`/api/admin/episodes/${episode.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,
-        episodeNumber,
+        episodeNumber: parsed.number,
+        episodeNumberLabel: parsed.label !== String(parsed.number) ? parsed.label : null,
         watchUrl: watchUrl || undefined,
-                        downloadLinks: links
+        downloadLinks: links
           .filter((l) => l.providerName || l.url || l.embedUrl)
           .map((l, i) => {
             const cleanEmbed = l.embedUrl ? extractSrc(l.embedUrl) : "";
@@ -278,12 +303,20 @@ function EpisodeBlock({
           }),
       }),
     });
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
-      onUpdate({ title, episodeNumber, downloadLinks: links });
+      onUpdate({
+        title,
+        episodeNumber: parsed.number,
+        episodeNumberLabel: parsed.label !== String(parsed.number) ? parsed.label : null,
+        downloadLinks: links,
+      });
       setEpisodeSaved(true);
       setTimeout(() => setEpisodeSaved(false), 2000);
       router.refresh();
+    } else {
+      setError(typeof data.error === "string" ? data.error : "Failed to save episode.");
     }
   }
 
@@ -291,10 +324,10 @@ function EpisodeBlock({
     <div className="rounded-sm border border-border p-4">
       <div className="flex flex-wrap items-center gap-2">
         <input
-          type="number"
-          value={episodeNumber}
-          onChange={(e) => setEpisodeNumber(Number(e.target.value))}
-          className="w-16 rounded-sm border border-border bg-surface px-2 py-1 text-xs"
+          value={serial}
+          onChange={(e) => setSerial(e.target.value)}
+          placeholder="3 or 1-10"
+          className="w-24 rounded-sm border border-border bg-surface px-2 py-1 text-xs font-mono"
         />
         <input
           value={title}
@@ -320,12 +353,14 @@ function EpisodeBlock({
             episodeSaved ? "bg-teal" : "bg-brass hover:bg-brass-bright"
           }`}
         >
-          {saving ? "Saving…" : episodeSaved ? "Saved ✓" : "Save"}
+          {saving ? "Saving..." : episodeSaved ? "Saved" : "Save"}
         </button>
         <button onClick={onDelete} className="text-xs text-danger hover:underline">
           Delete
         </button>
       </div>
+
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
 
       <div className="mt-3 space-y-2">
         {links.map((link, i) => (
@@ -342,7 +377,7 @@ function EpisodeBlock({
               onChange={(e) => updateLink(i, { url: e.target.value })}
               className="col-span-2 rounded-sm border border-border bg-surface px-2 py-1 text-xs"
             />
-                        <input
+            <input
               placeholder="Quality"
               value={link.quality ?? ""}
               onChange={(e) => updateLink(i, { quality: e.target.value })}
@@ -352,8 +387,14 @@ function EpisodeBlock({
               placeholder="Embed player URL (optional)"
               value={link.embedUrl ?? ""}
               onChange={(e) => updateLink(i, { embedUrl: e.target.value })}
-              className="col-span-2 rounded-sm border border-border bg-surface px-2 py-1 text-xs sm:col-span-4"
+              className="col-span-2 rounded-sm border border-border bg-surface px-2 py-1 text-xs sm:col-span-3"
             />
+            <button
+              onClick={() => removeLink(i)}
+              className="rounded-sm border border-border px-2 py-1 text-xs text-danger hover:border-danger"
+            >
+              Remove
+            </button>
           </div>
         ))}
       </div>
