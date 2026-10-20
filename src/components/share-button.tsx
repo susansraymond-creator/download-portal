@@ -9,8 +9,6 @@ declare global {
   }
 }
 
-const SOCIAL_NETWORKS = ["facebook", "twitter", "whatsapp", "telegram", "reddit"] as const;
-
 /**
  * Track a content share in Google Analytics so the admin can see which
  * social media platforms bring visitors in. Works with the gtag.js setup
@@ -37,15 +35,7 @@ function trackShare(network: string, slug: string) {
   }
 }
 
-export function ShareButton({
-  contentId,
-  title,
-  slug,
-}: {
-  contentId: string;
-  title: string;
-  slug: string;
-}) {
+export function ShareButton({ title, slug }: { title: string; slug: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -57,7 +47,7 @@ export function ShareButton({
   const encodedTitle = encodeURIComponent(title);
   const text = `Watch "${title}" — ${url}`;
 
-  async function shareTo(network: string, href: string) {
+  function shareTo(network: string, href: string) {
     trackShare(network, slug);
     window.open(href, "_blank", "noopener,noreferrer,width=640,height=580");
   }
@@ -159,7 +149,7 @@ export function ShareButton({
                 <span className="w-4 text-center font-mono">⧉</span>
                 {copied ? "Copied!" : "Copy Link"}
               </button>
-    </div>
+            </div>
           </div>
         </>
       )}
