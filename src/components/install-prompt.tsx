@@ -1,29 +1,39 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const DISMISS_KEY = "kdl-install-prompt-dismissed";
+// Set permanently once the app is installed — the pill never shows again.
+const INSTALLED_KEY = "kdl-app-installed";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+function isStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true
+  );
+}
+
 /**
- * Bottom-sheet "Install App" popup for the PWA.
+ * Compact bottom pill that invites visitors to install the PWA.
  *
- * - Shows once per browser until the visitor dismisses it (stored in
- *   localStorage) or the app is installed.
- * - Matches the classic install banner look: site icon + site name on the
- *   left, prominent Install button on the right.
- * - Uses the browser's native install prompt when available
- *   (beforeinstallprompt); on iOS Safari, which does not support it, the
- *   Install button expands into the "Share -> Add to Home Screen" steps.
- * - Deliberately does NOT use useSearchParams: that hook requires a
- *   Suspense boundary when rendered from the root layout and would break
- *   static generation of every page.
+ * Behavior:
+ * - Shows on the HOMEPAGE — on first load, on every refresh, and again
+ *   every time the visitor returns to the homepage (e.g. after viewing a
+ *   content page) — as long as the app is not installed.
+ * - Cancel (✕) only hides it for the current view; it does NOT persist.
+ *   Coming back to the homepage shows it again.
+ * - Once installed (standalone launch, appinstalled event, or the stored
+ *   flag) it never shows again on mobile or PC.
+ * - Tapping Install triggers the browser install dialog directly.
+ * - On iOS (no native install prompt), tapping Install reveals the
+ *   "Share -> Add to Home Screen" steps inline.
  */
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -31,38 +41,51 @@ export function InstallPrompt() {
   const [showIosSteps, setShowIosSteps] = useState(false);
   const pathname = usePathname();
   const [isIos, setIsIos] = useState(false);
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    // Never nag inside the admin panel.
-    if (pathname?.startsWith("/admin")) return;
+    // The pill lives on the homepage only.
+    if (pathname !== "/") {
+      setVisible(false);
+      return;
+    }
 
-    const dismissed = localStorage.getItem(DISMISS_KEY);
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    if (dismissed || standalone) return;
+    // Installed (or launched as an installed app) — never show again.
+    if (localStorage.getItem(INSTALLED_KEY) === "1" || isStandalone()) return;
 
-    const isIosDevice = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-    setIsIos(isIosDevice);
+    const iosDevice = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    setIsIos(iosDevice);
 
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     function onBeforeInstallPrompt(e: Event) {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      promptRef.current = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(promptRef.current);
       setVisible(true);
     }
 
-    if (isIosDevice) {
-      // iOS Safari has no beforeinstallprompt; show the hint banner instead.
-      timer = setTimeout(() => setVisible(true), 2500);
+    if (iosDevice) {
+      timer = setTimeout(() => {
+        if (!isStandalone()) setVisible(true);
+      }, 2500);
     } else {
-      window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      // The browser fires beforeinstallprompt only once per page load, so
+      // when the visitor returns to the homepage re-show the prompt we
+      // already captured instead of waiting for a second event.
+      if (promptRef.current) {
+        setDeferredPrompt(promptRef.current);
+        setVisible(true);
+      } else {
+        window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      }
     }
 
     const onAppInstalled = () => {
+      localStorage.setItem(INSTALLED_KEY, "1");
       setVisible(false);
       setDeferredPrompt(null);
+      promptRef.current = null;
     };
     window.addEventListener("appinstalled", onAppInstalled);
 
@@ -74,65 +97,64 @@ export function InstallPrompt() {
   }, [pathname]);
 
   async function install() {
+    if (isIos) {
+      setShowIosSteps((v) => !v);
+      return;
+    }
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();
+    await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
+      localStorage.setItem(INSTALLED_KEY, "1");
       setVisible(false);
       setDeferredPrompt(null);
+      promptRef.current = null;
     }
   }
 
+  // Cancel only hides for now — the pill returns the next time the
+  // visitor lands on the homepage or refreshes, until they install.
   function dismiss() {
-    localStorage.setItem(DISMISS_KEY, "1");
     setVisible(false);
+    setShowIosSteps(false);
   }
 
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4">
-      <div className="mx-auto max-w-5xl rounded-lg border border-border bg-surface p-4 shadow-2xl sm:p-5">
-        <div className="flex items-center gap-3">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md">
-            <Image src="/icon-192.png" alt="koreandramalink app icon" fill sizes="48px" className="object-cover" />
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3">
+      <div className="pop-in w-full max-w-md rounded-2xl border border-border bg-surface-raised/95 p-3 shadow-2xl backdrop-blur-md">
+        <div className="flex items-center gap-2.5">
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg">
+            <Image src="/icon-192.png" alt="koreandramalink icon" fill sizes="36px" className="object-cover" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-display text-lg font-bold leading-tight">koreandramalink</p>
-            <p className="font-mono text-xs text-text-muted">
-              {isIos ? "Add to Home Screen for quick access" : "Install app for quick access"}
+            <p className="truncate font-display text-sm font-bold leading-tight">koreandramalink</p>
+            <p className="truncate font-mono text-[0.65rem] text-text-muted">
+              {isIos ? "Add to Home Screen" : "Install for quick access"}
             </p>
           </div>
-
-          <div className="flex shrink-0 gap-2">
-            <button
-              onClick={dismiss}
-              className="rounded-sm border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:border-brass hover:text-brass"
-            >
-              Not now
-            </button>
-            {isIos ? (
-              <button
-                onClick={() => setShowIosSteps((v) => !v)}
-                className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-black"
-              >
-                Install
-              </button>
-            ) : (
-              <button
-                onClick={install}
-                className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-black"
-              >
-                Install
-              </button>
-            )}
-          </div>
+          <button
+            onClick={dismiss}
+            aria-label="Close install prompt"
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-text-muted transition-colors hover:bg-border/40 hover:text-text"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+          <button
+            onClick={install}
+            className="shrink-0 rounded-full bg-brass px-4 py-1.5 text-xs font-semibold text-ink transition-all duration-200 hover:bg-brass-bright hover:shadow-[0_0_14px_rgba(201,162,39,0.4)]"
+          >
+            Install
+          </button>
         </div>
 
         {isIos && showIosSteps && (
-          <p className="mt-3 rounded-sm border border-border bg-background/60 px-3 py-2 text-sm text-text-muted">
-            iOS-এ install করতে: Safari-র নিচে <span className="text-brass">Share (⬆)</span> বাটনে ট্যাপ করুন →{" "}
-            <span className="text-brass">Add to Home Screen</span> → তারপর <span className="text-brass">Add</span>।
+          <p className="mt-2 rounded-xl border border-border bg-ink/50 px-3 py-2 text-xs leading-relaxed text-text-muted">
+            Safari-র নিচে <span className="text-brass">Share (⬆)</span> → <span className="text-brass">Add to Home Screen</span> →{" "}
+            <span className="text-brass">Add</span> চাপুন।
           </p>
         )}
       </div>
