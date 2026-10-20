@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
+import { InstallPrompt } from "@/components/install-prompt";
 import { prisma } from "@/lib/prisma";
 
 const fraunces = Fraunces({
@@ -60,7 +61,17 @@ export async function generateMetadata(): Promise<Metadata> {
       google: siteVerification,
     },
     manifest: "/manifest.json",
+    // Explicit icons: when `icons` is set in metadata, Next.js ignores the
+    // app/icon.tsx file convention, so the generated "K" icon must be
+    // listed here explicitly or the browser falls back to favicon.ico
+    // (the old generic icon) and the "K" disappears.
     icons: {
+      icon: [
+        // Generated K favicon (app/icon.tsx route)
+        { url: "/icon", type: "image/png", sizes: "32x32" },
+        // Legacy multi-size fallback for older browsers / bookmarks
+        { url: "/favicon.ico", type: "image/x-icon" },
+      ],
       apple: "/icon-192.png",
     },
     appleWebApp: {
@@ -86,7 +97,7 @@ export default async function RootLayout({
   const gaId = (settingsMap.googleAnalyticsId as string) || process.env.NEXT_PUBLIC_GA_ID;
   const siteVerification =
     (settingsMap.googleSiteVerification as string) || process.env.GOOGLE_SITE_VERIFICATION;
-  const adsensePublisherId = settingsMap.googleAdsensePublisherId as string | undefined;
+  const adsensePublisherId = (settingsMap.googleAdsensePublisherId as string) || undefined;
   const adsenseEnabled = (settingsMap.adsenseEnabled as boolean) ?? false;
 
   return (
@@ -97,6 +108,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         <SiteHeader />
         <main className="flex-1">{children}</main>
+        <InstallPrompt />
         {adsenseEnabled && adsensePublisherId && !adsensePublisherId.includes("0000000000") && (
           <script
             async
