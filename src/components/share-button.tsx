@@ -39,7 +39,7 @@ function trackShare(network: string, slug: string) {
  * Append UTM parameters to a content URL before it is shared.
  *
  * When a visitor opens the shared link, Google Analytics records the
- * visit under (source / medium) — e.g. `facebook / share` — instead of
+ * visit under (source / medium) — e.g. `telegram / share` — instead of
  * lumping every social visitor into "Direct". This lets the admin see
  * exactly how many visitors each platform brings in.
  */
@@ -98,6 +98,7 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const hasNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   const url =
     typeof window !== "undefined"
@@ -123,24 +124,21 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
     };
   }, [open]);
 
-  async function nativeShare() {
+  async function moreAppsShare() {
     trackShare("native", slug);
-    if (navigator.share) {
-      try {
-        // The OS share sheet destination is unknown here, so the link
-        // carries a generic source. Any app the visitor picks still gets
-        // its own native referrer where the OS provides one.
-        await navigator.share({
-          title,
-          text: `Watch "${title}"`,
-          url: withUtm(url, "native-share", slug),
-        });
-        return;
-      } catch {
-        // User cancelled or share failed — fall back to the menu below.
-      }
+    if (!hasNativeShare) return;
+    try {
+      // Only reachable via the explicit "More apps" button. The OS share
+      // sheet destination is unknown to us, so the link carries a generic
+      // source and shows up in GA as `native-share / share`.
+      await navigator.share({
+        title,
+        text: `Watch "${title}"`,
+        url: withUtm(url, "native-share", slug),
+      });
+    } catch {
+      // User cancelled — keep the menu open.
     }
-    setOpen((v) => !v);
   }
 
   function shareTo(p: Platform) {
@@ -167,7 +165,7 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
   return (
     <div ref={rootRef} className="relative flex-1">
       <button
-        onClick={nativeShare}
+        onClick={() => setOpen((v) => !v)}
         aria-label={`Share ${title}`}
         aria-expanded={open}
         className="flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-3 py-2 text-sm text-text-muted transition-all duration-200 hover:border-brass hover:text-brass hover:shadow-[0_0_12px_rgba(201,162,39,0.25)]"
@@ -228,6 +226,20 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
               </>
             )}
           </button>
+
+          {hasNativeShare && (
+            <button
+              onClick={moreAppsShare}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full px-3 py-1.5 text-[0.65rem] text-text-muted transition-colors hover:text-text"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="5" cy="12" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="19" cy="12" r="1" />
+              </svg>
+              More apps…
+            </button>
+          )}
         </div>
       )}
     </div>
