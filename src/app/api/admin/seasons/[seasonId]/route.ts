@@ -22,6 +22,33 @@ export async function PATCH(
   const parsed = seasonPatchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
 
+  const existing = await prisma.season.findUnique({
+    where: { id: seasonId },
+    select: { id: true, contentId: true, seasonNumber: true },
+  });
+  if (!existing) return NextResponse.json({ error: "Season not found" }, { status: 404 });
+
+  // Reject duplicate season numbers within the same content.
+  if (
+    parsed.data.seasonNumber !== undefined &&
+    parsed.data.seasonNumber !== existing.seasonNumber
+  ) {
+    const duplicate = await prisma.season.findUnique({
+      where: {
+        contentId_seasonNumber: {
+          contentId: existing.contentId,
+          seasonNumber: parsed.data.seasonNumber,
+        },
+      },
+    });
+    if (duplicate) {
+      return NextResponse.json(
+        { error: "That season number already exists for this content" },
+        { status: 409 }
+      );
+    }
+  }
+
   const season = await prisma.season.update({
     where: { id: seasonId },
     data: {
@@ -32,6 +59,11 @@ export async function PATCH(
     },
   });
 
+  // Keep the parent content's updatedAt fresh and drop cached pages.
+  await prisma.content.update({
+    where: { id: existing.contentId },
+    data: { updatedAt: new Date() },
+  });
   await invalidateCache("content:*");
   return NextResponse.json({ ok: true, season });
 }
@@ -44,8 +76,17 @@ export async function DELETE(
   if (response) return response;
 
   const { seasonId } = await params;
+  const season = await prisma.season.findUnique({
+    where: { id: seasonId },
+    select: { contentId: true },
+  });
   await prisma.season.delete({ where: { id: seasonId } }).catch(() => null);
 
+  if (season) {
+    await prisma.content
+      .update({ where: { id: season.contentId }, data: { updatedAt: new Date() } })
+      .catch(() => {});
+  }
   await invalidateCache("content:*");
   return NextResponse.json({ ok: true });
 }
