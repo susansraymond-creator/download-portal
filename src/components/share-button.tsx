@@ -35,6 +35,24 @@ function trackShare(network: string, slug: string) {
   }
 }
 
+/**
+ * Append UTM parameters to a content URL before it is shared.
+ *
+ * When a visitor opens the shared link, Google Analytics records the
+ * visit under (source / medium) — e.g. `facebook / share` — instead of
+ * lumping every social visitor into "Direct". This lets the admin see
+ * exactly how many visitors each platform brings in.
+ */
+function withUtm(url: string, source: string, slug: string) {
+  const params = new URLSearchParams({
+    utm_source: source,
+    utm_medium: "share",
+    utm_campaign: "content-share",
+    utm_content: slug,
+  });
+  return `${url}?${params.toString()}`;
+}
+
 interface Platform {
   name: string;
   label: string;
@@ -85,7 +103,6 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
     typeof window !== "undefined"
       ? `${window.location.origin}/content/${slug}`
       : `/content/${slug}`;
-  const shareText = `Watch "${title}" — ${url}`;
 
   // Close the menu on outside click or Escape.
   useEffect(() => {
@@ -110,7 +127,14 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
     trackShare("native", slug);
     if (navigator.share) {
       try {
-        await navigator.share({ title, text: shareText, url });
+        // The OS share sheet destination is unknown here, so the link
+        // carries a generic source. Any app the visitor picks still gets
+        // its own native referrer where the OS provides one.
+        await navigator.share({
+          title,
+          text: `Watch "${title}"`,
+          url: withUtm(url, "native-share", slug),
+        });
         return;
       } catch {
         // User cancelled or share failed — fall back to the menu below.
@@ -121,12 +145,14 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
 
   function shareTo(p: Platform) {
     trackShare(p.name, slug);
-    window.open(p.href(url, shareText, title), "_blank", "noopener,noreferrer,width=640,height=580");
+    const trackedUrl = withUtm(url, p.name, slug);
+    const text = `Watch "${title}" — ${trackedUrl}`;
+    window.open(p.href(trackedUrl, text, title), "_blank", "noopener,noreferrer,width=640,height=580");
   }
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(withUtm(url, "copy-link", slug));
       trackShare("copy", slug);
       setCopied(true);
       setTimeout(() => {
