@@ -20,7 +20,10 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+// Fallback matches the production domain so a missing env var never
+// produces canonical URLs pointing at example.com.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://koreandramalink.vercel.app";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [verificationSetting, siteNameSetting, descSetting] = await Promise.all([
@@ -38,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(siteUrl),
     title: {
-      default: `${siteName} — Personal Content Archive`,
+      default: `${siteName} - Personal Content Archive`,
       template: `%s | ${siteName}`,
     },
     description: siteDescription,
@@ -53,7 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
       index: true,
       follow: true,
     },
-        verification: {
+    verification: {
       google: siteVerification,
     },
     manifest: "/manifest.json",
@@ -95,7 +98,6 @@ export default async function RootLayout({
         <SiteHeader />
         <main className="flex-1">{children}</main>
         {adsenseEnabled && adsensePublisherId && !adsensePublisherId.includes("0000000000") && (
-
           <script
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsensePublisherId}`}
